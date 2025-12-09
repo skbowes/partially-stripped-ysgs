@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<html style="height:100%">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>404</title>
+</head>
+<body style="background-color: #343434; color: #757575; margin:0;font: normal 11px/18px Arial, Helvetica, sans-serif; height:100%;">
+    <div style="height:auto; min-height:100%;">
+        <div style="text-align: center; width:800px; margin-left: -400px; position:absolute; top: 30%; left:50%;">
+            <h1 style="margin:0; font-size:100px; line-height:100px; font-weight:bold;">404</h1>
+            <h2 style="margin-top:20px;font-size: 11px;">The requested resource was not found.</h2>
+                    </div>
+    </div>
+</body>
+</html>

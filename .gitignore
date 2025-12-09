@@ -1,0 +1,31 @@
+# plots and folders containing plots/figures
+lc_plots/
+lc_plots_2025/
+figs/
+hr_diagrams/
+
+
+# folders I never check, caches and checkpoints
+.ipynb_checkpoints/
+logs_parallel/
+__pycache__/
+synth_phot_sed_fit_ex/
+
+# folder containing extra old copies of python and jupyter files
+extras/
+offsets_examples/
+old_summary_results/
+
+# folders containing data that is important but too big to store
+mag_amp_divisions/
+sub2/
+sub2025/
+sub2025_V2/
+pysynphot_data/
+temp_fitting/
+crossmatch_contamination/
+
+#files
+mc_cand_mcp.tgz
+
+
