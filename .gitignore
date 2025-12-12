@@ -21,7 +21,11 @@ mag_amp_divisions/
 sub2/
 sub2025/
 sub2025_V2/
-pysynphot_data/
+pysynphot_data/grid/bosz/r2000/m-0.75/
+pysynphot_data/grid/bosz/r2000/m-0.25/
+pysynphot_data/grid/pickles/
+pysynphot_data/pickles_catalog.csv
+pysynphot_data/grid/bosz/r500/
 temp_fitting/
 crossmatch_contamination/
 

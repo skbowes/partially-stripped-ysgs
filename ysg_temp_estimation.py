@@ -2,6 +2,8 @@
 """
 YSG Temperature Fitting - Production Version
 Vectorized and parallelized stellar parameter fitting for YSG candidates.
+Run this files with:
+python ysg_temp_estimation.py --stars 848 --cores 8 (or however many cores you want to use)
 """
 
 import numpy as np
