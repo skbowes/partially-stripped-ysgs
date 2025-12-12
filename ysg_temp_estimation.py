@@ -126,7 +126,16 @@ def observed_sed(index, coords, df_smc, df_lmc, flux=True, show=False):
                 mag_err = None
             if mag_err is None or pd.isna(mag_err) or mag_err <= 0:
                 mag_err = 0.1  # Default error
-            
+
+            if mag_err < 0.03:
+                mag_err = 0.03  # Set minimum error to 0.03 mag
+
+            if mag_err > 0.36:
+                # drop the data point if error is too large
+                band = np.nan
+                continue
+
+
             # Skip if magnitude itself is invalid
             if pd.isna(mag):
                 continue

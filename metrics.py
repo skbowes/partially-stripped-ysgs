@@ -1291,7 +1291,16 @@ def observed_sed(index, flux=True, show=False):
             if mag_err is None or pd.isna(mag_err) or mag_err <= 0:
                 print(f"WARNING: Missing or invalid error for {band} (error={mag_err}), using default 0.1")
                 mag_err = 0.1  # Default error if missing, NaN, or zero/negative
-            
+
+            if mag_err < 0.03:
+                mag_err = 0.03  # Set minimum error to 0.03 mag
+
+            if mag_err > 0.36:
+                # drop the data point if error is too large
+                band = np.nan
+                continue
+
+
             # Skip if magnitude itself is invalid
             if pd.isna(mag):
                 print(f"WARNING: Invalid magnitude for {band}, skipping")
