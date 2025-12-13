@@ -15,8 +15,7 @@ synth_phot_sed_fit_ex/
 extras/
 offsets_examples/
 old_summary_results/
-summary_results16.csv
-summary_results17.csv
+
 
 # folders containing data that is important but too big to store
 mag_amp_divisions/
@@ -33,5 +32,15 @@ crossmatch_contamination/
 
 #files
 mc_cand_mcp.tgz
+summary_results16.csv
+summary_results17.csv
+synphot1.tar.gz
+ysg_temp_fitting_summary.csv
+synth_phot_sed_fit_ex.zip
+ysg_with_pysynphot.yaml
+gaia_names
+eRASS1_HMXB_LMC_v1.0.fits
+
+
 
 
