@@ -39,8 +39,8 @@ def load_data():
     logger.info("Loading data files...")
     # Load coordinates, SMC and LMC candidate data
     coords = pd.read_csv('merged_smc_lmc_coords.csv', sep=r'\s+', comment='#', names=['ra', 'dec'])
-    df_lmc = pd.read_csv('/Users/shannonbowes/Research/ysg/candidates_and_lcs/final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
-    df_smc = pd.read_csv('/Users/shannonbowes/Research/ysg/candidates_and_lcs/final_smc_ysgcands.csv', comment='#') # , sep="\\s+"  
+    df_lmc = pd.read_csv('./annas_candidates/final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
+    df_smc = pd.read_csv('./annas_candidates/final_smc_ysgcands.csv', comment='#') # , sep="\\s+"  
     # Load synthetic photometry models
     computed_models = pd.read_csv('synth_phot_all_models.csv')
     return coords, df_smc, df_lmc, computed_models
