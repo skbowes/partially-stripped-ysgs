@@ -40,7 +40,9 @@ synth_phot_sed_fit_ex.zip
 ysg_with_pysynphot.yaml
 gaia_names
 eRASS1_HMXB_LMC_v1.0.fits
-
-
+synth_phot_all_models_trial.csv
+merged_smc_lmc_coords_with_index.csv
+ra_dec_angDist.csv
+ysg_temp_fitting_results.csv
 
 
