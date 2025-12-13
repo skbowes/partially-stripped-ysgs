@@ -10,8 +10,8 @@ from scipy.signal import find_peaks
 
 offsets_df = pd.read_csv('offsets.csv')
 coords = pd.read_csv('merged_smc_lmc_coords.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
-df_lmc = pd.read_csv('/Users/shannonbowes/Research/ysg/candidates_and_lcs/final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
-df_smc = pd.read_csv('/Users/shannonbowes/Research/ysg/candidates_and_lcs/final_smc_ysgcands.csv', comment='#') # , sep="\\s+"
+df_lmc = pd.read_csv('final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
+df_smc = pd.read_csv('final_smc_ysgcands.csv', comment='#') # , sep="\\s+"
 
 
 def mean_med_flux(index, df=None, telescopes=None, g=True, correct_offsets=True):
