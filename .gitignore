@@ -29,6 +29,8 @@ pysynphot_data/pickles_catalog.csv
 pysynphot_data/grid/bosz/r500/
 temp_fitting/
 crossmatch_contamination/
+dustmaps_data/
+
 
 #files
 mc_cand_mcp.tgz

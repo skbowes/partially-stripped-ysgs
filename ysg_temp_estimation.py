@@ -172,6 +172,8 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
     
     logger = logging.getLogger(f'worker_{star_indices_chunk[0]}')
     logger.info(f"Worker started: processing stars {star_indices_chunk[0]}-{star_indices_chunk[-1]}")
+    min_avs = pd.read_csv('ysg_candidate_extinctions.csv')
+
     
     standard_band_order = ['J', 'H', 'K', 'U', 'B', 'V', 'I', 'uvm2', 'uvw1', 'uvw2']
     cut_bands = ['K', 'H', 'J', 'I', 'V']
@@ -200,7 +202,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
             
             # Use standard band order that matches synthetic models
             common_bands = [band for band in standard_band_order if band in obs_band_names]
-            
+            min_av = min_avs[(min_avs['RA'] == RA) & (min_avs['DEC'] == dec)]['av_eden'].values[0]
             
             # Extract matched data arrays
             matched_obs_mags = np.array([obs_mags_dict[band] for band in common_bands])
@@ -216,14 +218,16 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
             # VECTORIZED CALCULATIONS
             n_models = len(models_to_test)
             
-            # Pre-extract all model data
-            all_model_mags = np.array([models_to_test[band+'_mag'].values for band in common_bands]).T # each row is a model, each column a band
-            model_teffs = models_to_test['teff'].values
-            model_loggs = models_to_test['logg'].values  
-            model_avs = models_to_test['av'].values
-            model_metallicities = models_to_test['metallicity'].values
-            model_lum_unscaled = models_to_test['lum_unscaled'].values
-            model_filenames = models_to_test['model'].values
+            # Pre-extract all model data, only take models with av >= min_av 
+            av_mask = models_to_test['av'] >= min_av
+            filtered_models = models_to_test[av_mask]
+            all_model_mags = np.array([filtered_models[band+'_mag'].values for band in common_bands]).T # each row is a model, each column a band
+            model_teffs = filtered_models['teff'].values
+            model_loggs = filtered_models['logg'].values
+            model_avs = filtered_models['av'].values
+            model_metallicities = filtered_models['metallicity'].values
+            model_lum_unscaled = filtered_models['lum_unscaled'].values
+            model_filenames = filtered_models['model'].values
             
             # Pre-compute indices
             cut_indices = np.array([j for j, band in enumerate(common_bands) if band in cut_bands])
