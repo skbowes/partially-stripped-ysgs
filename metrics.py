@@ -1237,9 +1237,9 @@ def observed_sed(index, flux=True, show=False):
     #bands and their Vega zero points in erg/s/cm^2/Angstrom
     band_zeropoints = {
     # Near-infrared (2MASS)
-    'Jmag':1.11933e-9,    # J-band
-    'Hmag':3.09069e-10,    # H-band
-    'Kmag':4.20615e-11,     # K-band
+    'Jmag':3.0596e-10,    # J-band 3.0596e-10 # formerly was 1.11933e-9 
+    'Hmag':1.11064e-10,    # H-band 1.11064e-10 # formerly was 3.09069e-10 
+    'Kmag':4.17999e-11,     # K-band 4.17999e-11 # formerly was 4.20615e-11
     # Optical (Johnson-Cousins)
     'Umag':4.08739e-9,    # U-band
     'Bmag':6.21086e-9,    # B-band

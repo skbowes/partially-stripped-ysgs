@@ -76,18 +76,21 @@ def observed_sed(index, coords, df_smc, df_lmc, flux=True, show=False):
     
     # Bands and their Vega zero points in erg/s/cm^2/Angstrom
     band_zeropoints = {
-        'Jmag': 1.11933e-9,    # J-band
-        'Hmag': 3.09069e-10,   # H-band
-        'Kmag': 4.20615e-11,   # K-band
-        'Umag': 4.08739e-9,    # U-band
-        'Bmag': 6.21086e-9,    # B-band
-        'Vmag': 3.64047e-9,    # V-band
-        'Imag': 9.23651e-10,   # I-band
-        'uvw1_mag': 4.02204e-9,  # UVW1
-        'uvw2_mag': 5.37469e-9,  # UVW2
-        'uvm2_mag': 4.66117e-9   # UVM2
+    # Near-infrared (2MASS)
+    'Jmag':3.0596e-10,    # J-band 3.0596e-10 # formerly was 1.11933e-9 
+    'Hmag':1.11064e-10,    # H-band 1.11064e-10 # formerly was 3.09069e-10 
+    'Kmag':4.17999e-11,     # K-band 4.17999e-11 # formerly was 4.20615e-11
+    # Optical (Johnson-Cousins)
+    'Umag':4.08739e-9,    # U-band
+    'Bmag':6.21086e-9,    # B-band
+    'Vmag':3.64047e-9,    # V-band
+    'Imag':9.23651e-10,    # I-band
+    # UV (Swift UVOT)
+    'uvw1_mag':4.02204e-9,  # UVW
+    'uvw2_mag':5.37469e-9,   # UVW2
+    'uvm2_mag':4.66117e-9   # UVM2
     }
-    
+
     # Effective wavelengths (in Angstroms)
     band_wavelengths = {
         'uvw2_mag': 2075.69,    # UV
