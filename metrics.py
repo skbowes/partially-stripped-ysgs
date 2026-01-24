@@ -247,7 +247,7 @@ def largest_amplitude(index, df=None, telescopes=None, g=True, correct_offsets=T
     amplitude_mag = max_mag - min_mag 
     
     print(f"\tLargest amplitude of variability (g-band: {g}): {amplitude:.2f} mJy, {amplitude_mag:.2f} mags")
-    return amplitude
+    return amplitude, amplitude_mag
 
 
 def offset_warning(index, g=True):
@@ -1197,7 +1197,7 @@ def info(index, g=True, change_period=None):
                 print(lombs['peaks'])
                 amplitude_5, lower_percentile_5, upper_percentile_5, mag_amplitude_5 = percentile_amplitude(index, df=df, telescopes=telescopes, g=g, tails=5)
                 amplitude_1, lower_percentile_1, upper_percentile_1, mag_amplitude_1 = percentile_amplitude(index, df=df, telescopes=telescopes, g=g, tails=1)
-                largest_amp = largest_amplitude(index, df=df, telescopes=telescopes, g=g)
+                largest_amp = largest_amplitude(index, df=df, telescopes=telescopes, g=g)[0]
                 result = amplitude_per_period(index, best_period, df=df, telescopes=telescopes, g=g, report=False)
 
         except Exception as e:

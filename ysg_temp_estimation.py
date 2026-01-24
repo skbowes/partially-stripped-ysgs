@@ -179,8 +179,9 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
 
     
     standard_band_order = ['J', 'H', 'K', 'U', 'B', 'V', 'I', 'uvm2', 'uvw1', 'uvw2']
-    cut_bands = ['K', 'H', 'J', 'I', 'V']
-    full_bands = ['K', 'H', 'J', 'I', 'V', 'B', 'U']#, 'uvw1', 'uvw2', 'uvm2']
+    V_redder_bands = ['K', 'H', 'J', 'I', 'V']
+    B_redder_bands = ['K', 'H', 'J', 'I', 'V', 'B']
+    U_redder_bands = ['K', 'H', 'J', 'I', 'V', 'B', 'U']#, 'uvw1', 'uvw2', 'uvm2']
     
     chunk_results = []
     chunk_summaries = []
@@ -233,8 +234,9 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
             model_filenames = filtered_models['model'].values
             
             # Pre-compute indices
-            cut_indices = np.array([j for j, band in enumerate(common_bands) if band in cut_bands])
-            full_indices = np.array([h for h, band in enumerate(common_bands) if band in full_bands])
+            V_redder_indices = np.array([j for j, band in enumerate(common_bands) if band in V_redder_bands])
+            B_redder_indices = np.array([k for k, band in enumerate(common_bands) if band in B_redder_bands])
+            U_redder_indices = np.array([h for h, band in enumerate(common_bands) if band in U_redder_bands])
             ref_idx = common_bands.index('K')
             k_idx = common_bands.index('K')
 
@@ -247,13 +249,15 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
             varying_K_sigmas = np.array([0, 1, 2, -1, -2])
             
             # Track best fits during loops (much more efficient)
-            best_fits_full = []  # Store best fit for each iteration/K combination
-            best_fits_cut = []
+            best_fits_U_redder = []  # Store best fit for each iteration/K combination
+            best_fits_B_redder = []
+            best_fits_V_redder = []
             
             for it in range(iterations):
                 sampled_obs_mags = sampled_mags[:,it].copy()
-                best_fits_full_K = []  # Store best fits for this iteration across K variations
-                best_fits_cut_K = []
+                best_fits_U_redder_K = []  # Store best fits for this iteration across K variations
+                best_fits_B_redder_K = []
+                best_fits_V_redder_K = []
                 
                 for K in varying_K_sigmas:
                     modified_obs_mags = sampled_obs_mags.copy()
@@ -270,232 +274,329 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     diff_squared = (modified_obs_mags[np.newaxis, :] - model_mags_shifted)**2
                     # chi2_full_all = np.sum(diff_squared / (matched_obs_errors[np.newaxis, :]**2), axis=1)
                     # Change fitting here:
-                    chi2_full_all = np.full(n_models, np.nan)
-                    if len(full_indices) > 0:
-                        diff_squared_full = diff_squared[:, full_indices]
-                        errors_full = matched_obs_errors[full_indices]
-                        chi2_full_all = np.sum(diff_squared_full / (errors_full[np.newaxis, :]**2), axis=1)
+                    chi2_U_redder_all = np.full(n_models, np.nan)
+                    if len(U_redder_indices) > 0:
+                        diff_squared_U_redder = diff_squared[:, U_redder_indices] # calculates (obs - model)^2 for U redder bands
+                        errors_U_redder = matched_obs_errors[U_redder_indices]
+                        chi2_U_redder_all = np.sum(diff_squared_U_redder / (errors_U_redder[np.newaxis, :]**2), axis=1) # sum over all models
+
+                    chi2_B_redder_all = np.full(n_models, np.nan)
+                    if len(B_redder_indices) > 0:
+                        diff_squared_B_redder = diff_squared[:, B_redder_indices]
+                        errors_B_redder = matched_obs_errors[B_redder_indices]
+                        chi2_B_redder_all = np.sum(diff_squared_B_redder / (errors_B_redder[np.newaxis, :]**2), axis=1) # sum over all models
                     
-                    chi2_cut_all = np.full(n_models, np.nan)
-                    if len(cut_indices) > 0:
-                        diff_squared_cut = diff_squared[:, cut_indices]
-                        errors_cut = matched_obs_errors[cut_indices]
-                        chi2_cut_all = np.sum(diff_squared_cut / (errors_cut[np.newaxis, :]**2), axis=1)
+                    chi2_V_redder_all = np.full(n_models, np.nan)
+                    if len(V_redder_indices) > 0:
+                        diff_squared_V_redder = diff_squared[:, V_redder_indices]
+                        errors_V_redder = matched_obs_errors[V_redder_indices]
+                        chi2_V_redder_all = np.sum(diff_squared_V_redder / (errors_V_redder[np.newaxis, :]**2), axis=1) # sum over all models
                     
                     # Find best fits for this iteration/K combination (EFFICIENT)
-                    best_full_idx = np.argmin(chi2_full_all)
-                    best_full_result_K = {
-                        'iteration': it, 'K_variation': K, 'teff': model_teffs[best_full_idx],
-                        'logg': model_loggs[best_full_idx], 'av': model_avs[best_full_idx],
-                        'logL': np.log10(model_lum_unscaled[best_full_idx] * offsets[best_full_idx] / 3.826e33),
-                        'chi2_full': chi2_full_all[best_full_idx],
-                        'chi2_cut': chi2_cut_all[best_full_idx] if len(cut_indices) > 0 else np.nan,
-                        'model_filename': model_filenames[best_full_idx]
+                    best_U_redder_idx = np.argmin(chi2_U_redder_all)
+                    best_U_redder_result_K = {
+                        'iteration': it, 'K_variation': K, 'teff': model_teffs[best_U_redder_idx],
+                        'logg': model_loggs[best_U_redder_idx], 'av': model_avs[best_U_redder_idx],
+                        'logL': np.log10(model_lum_unscaled[best_U_redder_idx] * offsets[best_U_redder_idx] / 3.826e33),
+                        'chi2_U_redder': chi2_U_redder_all[best_U_redder_idx],
+                        'chi2_B_redder': chi2_B_redder_all[best_U_redder_idx], #if len(B_redder_indices) > 0 else np.nan,
+                        'chi2_V_redder': chi2_V_redder_all[best_U_redder_idx], #if len(V_redder_indices) > 0 else np.nan,
+                        'model_filename': model_filenames[best_U_redder_idx]
                     }
-                    best_fits_full_K.append(best_full_result_K)
+                    best_fits_U_redder_K.append(best_U_redder_result_K)
                     
-                    # Best cut fit
-                    best_cut_idx = np.nanargmin(chi2_cut_all)
-                    best_cut_result_K = {
-                        'iteration': it, 'K_variation': K, 'teff': model_teffs[best_cut_idx],
-                        'logg': model_loggs[best_cut_idx], 'av': model_avs[best_cut_idx],
-                        'logL': np.log10(model_lum_unscaled[best_cut_idx] * offsets[best_cut_idx] / 3.826e33),
-                        'chi2_full': chi2_full_all[best_cut_idx],
-                        'chi2_cut': chi2_cut_all[best_cut_idx],
-                        'model_filename': model_filenames[best_cut_idx]
+                    # Best B_redder fit
+                    best_B_redder_idx = np.nanargmin(chi2_B_redder_all)
+                    best_B_redder_result_K = {
+                        'iteration': it, 'K_variation': K, 'teff': model_teffs[best_B_redder_idx],
+                        'logg': model_loggs[best_B_redder_idx], 'av': model_avs[best_B_redder_idx],
+                        'logL': np.log10(model_lum_unscaled[best_B_redder_idx] * offsets[best_B_redder_idx] / 3.826e33),
+                        'chi2_U_redder': chi2_U_redder_all[best_B_redder_idx],
+                        'chi2_B_redder': chi2_B_redder_all[best_B_redder_idx],
+                        'chi2_V_redder': chi2_V_redder_all[best_B_redder_idx],
+                        'model_filename': model_filenames[best_B_redder_idx]
                     }
-                    best_fits_cut_K.append(best_cut_result_K)
-                    
-                    
+                    best_fits_B_redder_K.append(best_B_redder_result_K)
+
+                    best_V_redder_idx = np.nanargmin(chi2_V_redder_all)
+                    best_V_redder_result_K = {
+                        'iteration': it, 'K_variation': K, 'teff': model_teffs[best_V_redder_idx],
+                        'logg': model_loggs[best_V_redder_idx], 'av': model_avs[best_V_redder_idx],
+                        'logL': np.log10(model_lum_unscaled[best_V_redder_idx] * offsets[best_V_redder_idx] / 3.826e33),
+                        'chi2_U_redder': chi2_U_redder_all[best_V_redder_idx],
+                        'chi2_B_redder': chi2_B_redder_all[best_V_redder_idx],
+                        'chi2_V_redder': chi2_V_redder_all[best_V_redder_idx],
+                        'model_filename': model_filenames[best_V_redder_idx]
+                    }
+                    best_fits_V_redder_K.append(best_V_redder_result_K)
+
+
                 # Here is where I'll store the best results from iterating on K:
                 # take best among K variations for this iteration
-                chi2_full_values_K = [r['chi2_full'] for r in best_fits_full_K]
-                best_full_K_idx = np.argmin(chi2_full_values_K)
-                best_fits_full.append(best_fits_full_K[best_full_K_idx])
+                chi2_U_redder_values_K = [r['chi2_U_redder'] for r in best_fits_U_redder_K]
+                best_U_redder_K_idx = np.argmin(chi2_U_redder_values_K)
+                best_fits_U_redder.append(best_fits_U_redder_K[best_U_redder_K_idx])
 
-                chi2_cut_values_K = [r['chi2_cut'] for r in best_fits_cut_K]
-                best_cut_K_idx = np.nanargmin(chi2_cut_values_K)
-                best_fits_cut.append(best_fits_cut_K[best_cut_K_idx])
+                chi2_B_redder_values_K = [r['chi2_B_redder'] for r in best_fits_B_redder_K]
+                best_B_redder_K_idx = np.nanargmin(chi2_B_redder_values_K)
+                best_fits_B_redder.append(best_fits_B_redder_K[best_B_redder_K_idx])
+
+                chi2_V_redder_values_K = [r['chi2_V_redder'] for r in best_fits_V_redder_K]
+                best_V_redder_K_idx = np.nanargmin(chi2_V_redder_values_K)
+                best_fits_V_redder.append(best_fits_V_redder_K[best_V_redder_K_idx])
             # END VECTORIZED CALCULATIONS
-            # Create separate _full and _cut parquet files with ALL best-fit results
+            # Create separate _U_redder and _B_redder and _V_redder parquet files with ALL best-fit results
             os.makedirs('temp_fitting', exist_ok=True)
             
             # Write full band results (best fit for each iteration/K combination)
-            if best_fits_full:
-                full_data = []
-                for fit in best_fits_full:
-                    full_result = {
-                        'star_idx': star_idx, 'RA': RA, 'DEC': dec,
-                        'iteration': fit['iteration'],
-                        'K_variation': fit['K_variation'],
-                        'teff': fit['teff'],
-                        'logg': fit['logg'], 
-                        'av': fit['av'],
-                        'logL': fit['logL'],
-                        'chi2_full': fit['chi2_full'],
-                        'chi2_cut': fit['chi2_cut'],  # Include both chi2 values for comparison
-                        'model_filename': fit['model_filename']
-                    }
-                    full_data.append(full_result)
+            U_redder_data = []
+            for fit in best_fits_U_redder:
+                U_redder_result = {
+                    'star_idx': star_idx, 'RA': RA, 'DEC': dec,
+                    'iteration': fit['iteration'],
+                    'K_variation': fit['K_variation'],
+                    'teff': fit['teff'],
+                    'logg': fit['logg'], 
+                    'av': fit['av'],
+                    'logL': fit['logL'],
+                    'chi2_U_redder': fit['chi2_U_redder'],
+                    'chi2_B_redder': fit['chi2_B_redder'],  # Include both chi2 values for comparison
+                    'chi2_V_redder': fit['chi2_V_redder'],
+                    'model_filename': fit['model_filename']
+                }
+                U_redder_data.append(U_redder_result)
                 
-                df_full = pd.DataFrame(full_data)
-                full_filename = output_filename.replace('.csv', '_full.parquet')
-                df_full.to_parquet(full_filename, index=False)
-                logger.info(f"Star {star_idx}: saved {len(full_data)} full band best fits to {full_filename}")
+            df_U_redder = pd.DataFrame(U_redder_data)
+            U_redder_filename = output_filename.replace('.csv', '_U_redder.parquet')
+            df_U_redder.to_parquet(U_redder_filename, index=False)
+            logger.info(f"Star {star_idx}: saved {len(U_redder_data)} U redder band best fits to {U_redder_filename}")
+
+            B_redder_data = []
+            for fit in best_fits_B_redder:
+                B_redder_result = {
+                    'star_idx': star_idx, 'RA': RA, 'DEC': dec,
+                    'iteration': fit['iteration'],
+                    'K_variation': fit['K_variation'],
+                    'teff': fit['teff'],
+                    'logg': fit['logg'], 
+                    'av': fit['av'],
+                    'logL': fit['logL'],
+                    'chi2_U_redder': fit['chi2_U_redder'],
+                    'chi2_B_redder': fit['chi2_B_redder'],  # Include both chi2 values for comparison
+                    'chi2_V_redder': fit['chi2_V_redder'],
+                    'model_filename': fit['model_filename']
+                }
+                B_redder_data.append(B_redder_result)
+            df_B_redder = pd.DataFrame(B_redder_data)
+            B_redder_filename = output_filename.replace('.csv', '_B_redder.parquet')
+            df_B_redder.to_parquet(B_redder_filename, index=False)
+            logger.info(f"Star {star_idx}: saved {len(B_redder_data)} B redder band best fits to {B_redder_filename}")
+
             
             # Write cut band results (best fit for each iteration/K combination)
-            if best_fits_cut:
-                # Only include valid (non-NaN) cut fits
-                valid_cut_fits = [r for r in best_fits_cut if not np.isnan(r['chi2_cut'])]
-                if valid_cut_fits:
-                    cut_data = []
-                    for fit in valid_cut_fits:
-                        cut_result = {
-                            'star_idx': star_idx, 'RA': RA, 'DEC': dec,
-                            'iteration': fit['iteration'],
-                            'K_variation': fit['K_variation'],
-                            'teff': fit['teff'],
-                            'logg': fit['logg'],
-                            'av': fit['av'], 
-                            'logL': fit['logL'],
-                            'chi2_full': fit['chi2_full'],  # Include both chi2 values for comparison
-                            'chi2_cut': fit['chi2_cut'],
-                            'model_filename': fit['model_filename']
-                        }
-                        cut_data.append(cut_result)
-                    
-                    df_cut = pd.DataFrame(cut_data)
-                    cut_filename = output_filename.replace('.csv', '_cut.parquet')
-                    df_cut.to_parquet(cut_filename, index=False)
-                    logger.info(f"Star {star_idx}: saved {len(cut_data)} cut band best fits to {cut_filename}")
-            
+            # Only include valid (non-NaN) cut fits
+            V_redder_data = []
+            for fit in best_fits_V_redder:
+                V_redder_result = {
+                    'star_idx': star_idx, 'RA': RA, 'DEC': dec,
+                    'iteration': fit['iteration'],
+                    'K_variation': fit['K_variation'],
+                    'teff': fit['teff'],
+                    'logg': fit['logg'],
+                    'av': fit['av'], 
+                    'logL': fit['logL'],
+                    'chi2_U_redder': fit['chi2_U_redder'],  # Include both chi2 values for comparison
+                    'chi2_B_redder': fit['chi2_B_redder'],
+                    'chi2_V_redder': fit['chi2_V_redder'],
+                    'model_filename': fit['model_filename']
+                }
+                V_redder_data.append(V_redder_result)
+                
+            df_V_redder = pd.DataFrame(V_redder_data)
+            V_redder_filename = output_filename.replace('.csv', '_V_redder.parquet')
+            df_V_redder.to_parquet(V_redder_filename, index=False)
+            logger.info(f"Star {star_idx}: saved {len(V_redder_data)} V redder band best fits to {V_redder_filename}")
+        
             # Calculate summary statistics - both distribution stats and overall best fits
             summary = {'star_idx': star_idx, 'RA': RA, 'DEC': dec}
             
             # Add best fit information to summary
-            if best_fits_full:
-                chi2_full_values = [r['chi2_full'] for r in best_fits_full]
-                best_full_idx = np.argmin(chi2_full_values)
-                best_full = best_fits_full[best_full_idx]
+            if best_fits_U_redder:
+                chi2_U_redder_values = [r['chi2_U_redder'] for r in best_fits_U_redder]
+                best_U_redder_idx = np.argmin(chi2_U_redder_values)
+                best_U_redder = best_fits_U_redder[best_U_redder_idx]
                 summary.update({
-                    'teff_full': best_full['teff'],
-                    'logg_full': best_full['logg'],
-                    'av_full': best_full['av'], 
-                    'logL_full': best_full['logL'],
-                    'chi2_full': best_full['chi2_full'],
-                    'best_model_full_filename': best_full['model_filename']
+                    'teff_U_redder': best_U_redder['teff'],
+                    'logg_U_redder': best_U_redder['logg'],
+                    'av_U_redder': best_U_redder['av'], 
+                    'logL_U_redder': best_U_redder['logL'],
+                    'chi2_U_redder': best_U_redder['chi2_U_redder'],
+                    'best_model_U_redder_filename': best_U_redder['model_filename']
                 })
             
-            if best_fits_cut:
-                chi2_cut_values = [r['chi2_cut'] for r in best_fits_cut if not np.isnan(r['chi2_cut'])]
-                if chi2_cut_values:
-                    valid_cut_fits = [r for r in best_fits_cut if not np.isnan(r['chi2_cut'])]
-                    best_cut_idx = np.argmin(chi2_cut_values)
-                    best_cut = valid_cut_fits[best_cut_idx]
+            if best_fits_B_redder:
+                chi2_B_redder_values = [r['chi2_B_redder'] for r in best_fits_B_redder if not np.isnan(r['chi2_B_redder'])]
+                if chi2_B_redder_values:
+                    valid_B_redder_fits = [r for r in best_fits_B_redder if not np.isnan(r['chi2_B_redder'])]
+                    best_B_redder_idx = np.argmin(chi2_B_redder_values)
+                    best_B_redder = valid_B_redder_fits[best_B_redder_idx]
                     summary.update({
-                        'teff_cut': best_cut['teff'],
-                        'logg_cut': best_cut['logg'],
-                        'av_cut': best_cut['av'],
-                        'logL_cut': best_cut['logL'], 
-                        'chi2_cut': best_cut['chi2_cut'],
-                        'best_model_cut_filename': best_cut['model_filename']
+                        'teff_B_redder': best_B_redder['teff'],
+                        'logg_B_redder': best_B_redder['logg'],
+                        'av_B_redder': best_B_redder['av'],
+                        'logL_B_redder': best_B_redder['logL'], 
+                        'chi2_B_redder': best_B_redder['chi2_B_redder'],
+                        'best_model_B_redder_filename': best_B_redder['model_filename']
+                    })
+
+            if best_fits_V_redder:
+                chi2_V_redder_values = [r['chi2_V_redder'] for r in best_fits_V_redder if not np.isnan(r['chi2_V_redder'])]
+                if chi2_V_redder_values:
+                    valid_V_redder_fits = [r for r in best_fits_V_redder if not np.isnan(r['chi2_V_redder'])]
+                    best_V_redder_idx = np.argmin(chi2_V_redder_values)
+                    best_V_redder = valid_V_redder_fits[best_V_redder_idx]
+                    summary.update({
+                        'teff_V_redder': best_V_redder['teff'],
+                        'logg_V_redder': best_V_redder['logg'],
+                        'av_V_redder': best_V_redder['av'],
+                        'logL_V_redder': best_V_redder['logL'],
+                        'chi2_V_redder': best_V_redder['chi2_V_redder'],
+                        'best_model_V_redder_filename': best_V_redder['model_filename']
                     })
             
-            # Full band distribution statistics
-            if best_fits_full:
-                teff_values_full = [r['teff'] for r in best_fits_full]
-                logL_values_full = [r['logL'] for r in best_fits_full]
-                logg_values_full = [r['logg'] for r in best_fits_full]
-                av_values_full = [r['av'] for r in best_fits_full]
-                chi2_full_values = [r['chi2_full'] for r in best_fits_full]
+            # U redder band distribution statistics
+            if best_fits_U_redder:
+                teff_values_U_redder = [r['teff'] for r in best_fits_U_redder]
+                logL_values_U_redder = [r['logL'] for r in best_fits_U_redder]
+                logg_values_U_redder = [r['logg'] for r in best_fits_U_redder]
+                av_values_U_redder = [r['av'] for r in best_fits_U_redder]
+                chi2_U_redder_values = [r['chi2_U_redder'] for r in best_fits_U_redder]
                 
                 summary.update({
-                    'n_fits_full': len(best_fits_full),
-                    'teff_mean_full': np.mean(teff_values_full),
-                    'teff_median_full': np.median(teff_values_full),
-                    'teff_std_full': np.std(teff_values_full),
-                    'teff_16perc_full': np.percentile(teff_values_full, 16),
-                    'teff_50perc_full': np.percentile(teff_values_full, 50),
-                    'teff_84perc_full': np.percentile(teff_values_full, 84),
-                    'logT_mean_full': np.mean(np.log10(teff_values_full)),
-                    'logT_median_full': np.median(np.log10(teff_values_full)),
-                    'logT_std_full': np.std(np.log10(teff_values_full)),
-                    'logL_mean_full': np.mean(logL_values_full),
-                    'logL_median_full': np.median(logL_values_full),
-                    'logL_std_full': np.std(logL_values_full),
-                    'logL_16perc_full': np.percentile(logL_values_full, 16),
-                    'logL_50perc_full': np.percentile(logL_values_full, 50),
-                    'logL_84perc_full': np.percentile(logL_values_full, 84),
-                    'logg_mean_full': np.mean(logg_values_full),
-                    'logg_median_full': np.median(logg_values_full),
-                    'logg_std_full': np.std(logg_values_full),
-                    'logg_16perc_full': np.percentile(logg_values_full, 16),
-                    'logg_50perc_full': np.percentile(logg_values_full, 50),
-                    'logg_84perc_full': np.percentile(logg_values_full, 84),
-                    'av_mean_full': np.mean(av_values_full),
-                    'av_median_full': np.median(av_values_full),
-                    'av_std_full': np.std(av_values_full),
-                    'av_16perc_full': np.percentile(av_values_full, 16),
-                    'av_50perc_full': np.percentile(av_values_full, 50),
-                    'av_84perc_full': np.percentile(av_values_full, 84),
-                    'chi2_full_mean': np.mean(chi2_full_values)
+                    'n_fits_U_redder': len(best_fits_U_redder),
+                    'teff_mean_U_redder': np.mean(teff_values_U_redder),
+                    'teff_median_U_redder': np.median(teff_values_U_redder),
+                    'teff_std_U_redder': np.std(teff_values_U_redder),
+                    'teff_16perc_U_redder': np.percentile(teff_values_U_redder, 16),
+                    'teff_50perc_U_redder': np.percentile(teff_values_U_redder, 50),
+                    'teff_84perc_U_redder': np.percentile(teff_values_U_redder, 84),
+                    'logT_mean_U_redder': np.mean(np.log10(teff_values_U_redder)),
+                    'logT_median_U_redder': np.median(np.log10(teff_values_U_redder)),
+                    'logT_std_U_redder': np.std(np.log10(teff_values_U_redder)),
+                    'logL_mean_U_redder': np.mean(logL_values_U_redder),
+                    'logL_median_U_redder': np.median(logL_values_U_redder),
+                    'logL_std_U_redder': np.std(logL_values_U_redder),
+                    'logL_16perc_U_redder': np.percentile(logL_values_U_redder, 16),
+                    'logL_50perc_U_redder': np.percentile(logL_values_U_redder, 50),
+                    'logL_84perc_U_redder': np.percentile(logL_values_U_redder, 84),
+                    'logg_mean_U_redder': np.mean(logg_values_U_redder),
+                    'logg_median_U_redder': np.median(logg_values_U_redder),
+                    'logg_std_U_redder': np.std(logg_values_U_redder),
+                    'logg_16perc_U_redder': np.percentile(logg_values_U_redder, 16),
+                    'logg_50perc_U_redder': np.percentile(logg_values_U_redder, 50),
+                    'logg_84perc_U_redder': np.percentile(logg_values_U_redder, 84),
+                    'av_mean_U_redder': np.mean(av_values_U_redder),
+                    'av_median_U_redder': np.median(av_values_U_redder),
+                    'av_std_U_redder': np.std(av_values_U_redder),
+                    'av_16perc_U_redder': np.percentile(av_values_U_redder, 16),
+                    'av_50perc_U_redder': np.percentile(av_values_U_redder, 50),
+                    'av_84perc_U_redder': np.percentile(av_values_U_redder, 84),
+                    'chi2_U_redder_mean': np.mean(chi2_U_redder_values)
                 })
             
             # Cut band distribution statistics
-            if best_fits_cut:
-                # Only use valid (non-NaN) cut fits
-                valid_cut_fits = [r for r in best_fits_cut if not np.isnan(r['chi2_cut'])]
-                if valid_cut_fits:
-                    teff_values_cut = [r['teff'] for r in valid_cut_fits]
-                    logL_values_cut = [r['logL'] for r in valid_cut_fits]
-                    logg_values_cut = [r['logg'] for r in valid_cut_fits]
-                    av_values_cut = [r['av'] for r in valid_cut_fits]
-                    chi2_cut_values = [r['chi2_cut'] for r in valid_cut_fits]
+            if best_fits_B_redder:
+                teff_values_B_redder = [r['teff'] for r in best_fits_B_redder]
+                logL_values_B_redder = [r['logL'] for r in best_fits_B_redder]
+                logg_values_B_redder = [r['logg'] for r in best_fits_B_redder]
+                av_values_B_redder = [r['av'] for r in best_fits_B_redder]
+                chi2_B_redder_values = [r['chi2_B_redder'] for r in best_fits_B_redder]
                     
-                    summary.update({
-                        'n_fits_cut': len(valid_cut_fits),
-                        'teff_mean_cut': np.mean(teff_values_cut),
-                        'teff_median_cut': np.median(teff_values_cut),
-                        'teff_std_cut': np.std(teff_values_cut),
-                        'teff_16perc_cut': np.percentile(teff_values_cut, 16),
-                        'teff_50perc_cut': np.percentile(teff_values_cut, 50),
-                        'teff_84perc_cut': np.percentile(teff_values_cut, 84),
-                        'logT_mean_cut': np.mean(np.log10(teff_values_cut)),
-                        'logT_median_cut': np.median(np.log10(teff_values_cut)),
-                        'logT_std_cut': np.std(np.log10(teff_values_cut)),
-                        'logL_mean_cut': np.mean(logL_values_cut),
-                        'logL_median_cut': np.median(logL_values_cut),
-                        'logL_std_cut': np.std(logL_values_cut),
-                        'logL_16perc_cut': np.percentile(logL_values_cut, 16),
-                        'logL_50perc_cut': np.percentile(logL_values_cut, 50),
-                        'logL_84perc_cut': np.percentile(logL_values_cut, 84),
-                        'logg_mean_cut': np.mean(logg_values_cut),
-                        'logg_median_cut': np.median(logg_values_cut),
-                        'logg_std_cut': np.std(logg_values_cut),
-                        'logg_16perc_cut': np.percentile(logg_values_cut, 16),
-                        'logg_50perc_cut': np.percentile(logg_values_cut, 50),
-                        'logg_84perc_cut': np.percentile(logg_values_cut, 84),
-                        'av_mean_cut': np.mean(av_values_cut),
-                        'av_median_cut': np.median(av_values_cut),
-                        'av_std_cut': np.std(av_values_cut),
-                        'av_16perc_cut': np.percentile(av_values_cut, 16),
-                        'av_50perc_cut': np.percentile(av_values_cut, 50),
-                        'av_84perc_cut': np.percentile(av_values_cut, 84),
-                        'chi2_cut_mean': np.mean(chi2_cut_values)
-                    })
+                summary.update({
+                    'n_fits_B_redder': len(best_fits_B_redder),
+                    'teff_mean_B_redder': np.mean(teff_values_B_redder),
+                    'teff_median_B_redder': np.median(teff_values_B_redder),
+                    'teff_std_B_redder': np.std(teff_values_B_redder),
+                    'teff_16perc_B_redder': np.percentile(teff_values_B_redder, 16),
+                    'teff_50perc_B_redder': np.percentile(teff_values_B_redder, 50),
+                    'teff_84perc_B_redder': np.percentile(teff_values_B_redder, 84),
+                    'logT_mean_B_redder': np.mean(np.log10(teff_values_B_redder)),
+                    'logT_median_B_redder': np.median(np.log10(teff_values_B_redder)),
+                    'logT_std_B_redder': np.std(np.log10(teff_values_B_redder)),
+                    'logL_mean_B_redder': np.mean(logL_values_B_redder),
+                    'logL_median_B_redder': np.median(logL_values_B_redder),
+                    'logL_std_B_redder': np.std(logL_values_B_redder),
+                    'logL_16perc_B_redder': np.percentile(logL_values_B_redder, 16),
+                    'logL_50perc_B_redder': np.percentile(logL_values_B_redder, 50),
+                    'logL_84perc_B_redder': np.percentile(logL_values_B_redder, 84),
+                    'logg_mean_B_redder': np.mean(logg_values_B_redder),
+                    'logg_median_B_redder': np.median(logg_values_B_redder),
+                    'logg_std_B_redder': np.std(logg_values_B_redder),
+                    'logg_16perc_B_redder': np.percentile(logg_values_B_redder, 16),
+                    'logg_50perc_B_redder': np.percentile(logg_values_B_redder, 50),
+                    'logg_84perc_B_redder': np.percentile(logg_values_B_redder, 84),
+                    'av_mean_B_redder': np.mean(av_values_B_redder),
+                    'av_median_B_redder': np.median(av_values_B_redder),
+                    'av_std_B_redder': np.std(av_values_B_redder),
+                    'av_16perc_B_redder': np.percentile(av_values_B_redder, 16),
+                    'av_50perc_B_redder': np.percentile(av_values_B_redder, 50),
+                    'av_84perc_B_redder': np.percentile(av_values_B_redder, 84),
+                    'chi2_B_redder_mean': np.mean(chi2_B_redder_values)
+                })
+            
+            if best_fits_V_redder:
+                teff_values_V_redder = [r['teff'] for r in best_fits_V_redder]
+                logL_values_V_redder = [r['logL'] for r in best_fits_V_redder]
+                logg_values_V_redder = [r['logg'] for r in best_fits_V_redder]
+                av_values_V_redder = [r['av'] for r in best_fits_V_redder]
+                chi2_V_redder_values = [r['chi2_V_redder'] for r in best_fits_V_redder]
+                    
+                summary.update({
+                    'n_fits_V_redder': len(best_fits_V_redder),
+                    'teff_mean_V_redder': np.mean(teff_values_V_redder),
+                    'teff_median_V_redder': np.median(teff_values_V_redder),
+                    'teff_std_V_redder': np.std(teff_values_V_redder),
+                    'teff_16perc_V_redder': np.percentile(teff_values_V_redder, 16),
+                    'teff_50perc_V_redder': np.percentile(teff_values_V_redder, 50),
+                    'teff_84perc_V_redder': np.percentile(teff_values_V_redder, 84),
+                    'logT_mean_V_redder': np.mean(np.log10(teff_values_V_redder)),
+                    'logT_median_V_redder': np.median(np.log10(teff_values_V_redder)),
+                    'logT_std_V_redder': np.std(np.log10(teff_values_V_redder)),
+                    'logL_mean_V_redder': np.mean(logL_values_V_redder),
+                    'logL_median_V_redder': np.median(logL_values_V_redder),
+                    'logL_std_V_redder': np.std(logL_values_V_redder),
+                    'logL_16perc_V_redder': np.percentile(logL_values_V_redder, 16),
+                    'logL_50perc_V_redder': np.percentile(logL_values_V_redder, 50),
+                    'logL_84perc_V_redder': np.percentile(logL_values_V_redder, 84),
+                    'logg_mean_V_redder': np.mean(logg_values_V_redder),
+                    'logg_median_V_redder': np.median(logg_values_V_redder),
+                    'logg_std_V_redder': np.std(logg_values_V_redder),
+                    'logg_16perc_V_redder': np.percentile(logg_values_V_redder, 16),
+                    'logg_50perc_V_redder': np.percentile(logg_values_V_redder, 50),
+                    'logg_84perc_V_redder': np.percentile(logg_values_V_redder, 84),
+                    'av_mean_V_redder': np.mean(av_values_V_redder),
+                    'av_median_V_redder': np.median(av_values_V_redder),
+                    'av_std_V_redder': np.std(av_values_V_redder),
+                    'av_16perc_V_redder': np.percentile(av_values_V_redder, 16),
+                    'av_50perc_V_redder': np.percentile(av_values_V_redder, 50),
+                    'av_84perc_V_redder': np.percentile(av_values_V_redder, 84),
+                    'chi2_V_redder_mean': np.mean(chi2_V_redder_values)
+                })
             
             # Debug: Log some statistics for verification 
-            has_full = 'teff_full' in summary
-            has_cut = 'teff_cut' in summary
-            n_full_saved = len(best_fits_full) if best_fits_full else 0
-            n_cut_saved = len([r for r in best_fits_cut if not np.isnan(r['chi2_cut'])]) if best_fits_cut else 0
+            has_U_redder = 'teff_U_redder' in summary
+            has_B_redder = 'teff_B_redder' in summary
+            has_V_redder = 'teff_V_redder' in summary
+            n_U_redder_saved = len(best_fits_U_redder) if best_fits_U_redder else 0
+            n_B_redder_saved = len(best_fits_B_redder) if best_fits_B_redder else 0
+            n_V_redder_saved = len(best_fits_V_redder) if best_fits_V_redder else 0
             
-            if has_full and has_cut:
-                logger.info(f"Star {star_idx}: Saved {n_full_saved} full fits and {n_cut_saved} cut fits. Best: Full Teff={summary['teff_full']}K, Cut Teff={summary['teff_cut']}K")
-            elif has_full:
-                logger.info(f"Star {star_idx}: Saved {n_full_saved} full fits only. Best Teff={summary['teff_full']}K")
-            elif has_cut:
-                logger.info(f"Star {star_idx}: Saved {n_cut_saved} cut fits only. Best Teff={summary['teff_cut']}K")
+            if has_U_redder and has_B_redder and has_V_redder:
+                logger.info(f"Star {star_idx}: Saved {n_U_redder_saved} U_redder fits, {n_B_redder_saved} B_redder fits, and {n_V_redder_saved} V_redder fits. Best: U_redder Teff={summary['teff_U_redder']}K, B_redder Teff={summary['teff_B_redder']}K, V_redder Teff={summary['teff_V_redder']}K")
+            elif has_U_redder:
+                logger.info(f"Star {star_idx}: Saved {n_U_redder_saved} U_redder fits only. Best Teff={summary['teff_U_redder']}K")
+            elif has_B_redder:
+                logger.info(f"Star {star_idx}: Saved {n_B_redder_saved} B_redder fits only. Best Teff={summary['teff_B_redder']}K")
             else:
                 logger.info(f"Star {star_idx}: No valid fits found")
             
@@ -552,7 +653,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, computed_m
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_v2.csv'
+        summary_filename = f'ysg_temp_fitting_summary_v3.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()
