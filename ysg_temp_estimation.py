@@ -46,20 +46,20 @@ def load_data():
     return coords, df_smc, df_lmc, computed_models
 
 
-def rchi2_with_err(star_mags,star_err,model_mags):
-    '''
-    Returns the reduced chi^2, accounting for errors
-    Parameters:
-        star_mags: Observed magnitudes
-        star_err: Uncertainty on the observed magnitudes
-        model_mags: Model magnitudes
-    Returns:
-        rchi2: Reduced chi^2 value
-    '''
-    N = len(star_mags)
-    z = (star_mags-model_mags)/star_err
-    rchi2 = np.sum(z**2)/(N-1)
-    return rchi2
+# def rchi2_with_err(star_mags,star_err,model_mags):
+#     '''
+#     Returns the reduced chi^2, accounting for errors
+#     Parameters:
+#         star_mags: Observed magnitudes
+#         star_err: Uncertainty on the observed magnitudes
+#         model_mags: Model magnitudes
+#     Returns:
+#         rchi2: Reduced chi^2 value
+#     '''
+#     N = len(star_mags)
+#     z = (star_mags-model_mags)/star_err
+#     rchi2 = np.sum(z**2)/(N-1)
+#     return rchi2
 
 def observed_sed(index, coords, df_smc, df_lmc, flux=True, show=False):
     """ 
