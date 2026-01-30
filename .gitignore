@@ -47,5 +47,9 @@ merged_smc_lmc_coords_with_index.csv
 ra_dec_angDist.csv
 ysg_temp_fitting_results.csv
 661446200650-light-curves.csv
-
+chunk_1.fits
+chunk_2.fits
+chunk_3.fits
+chunk_4.fits
+chunk_5.fits
 
