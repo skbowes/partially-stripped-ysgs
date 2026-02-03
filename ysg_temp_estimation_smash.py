@@ -175,7 +175,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
     
     logger = logging.getLogger(f'worker_{star_indices_chunk[0]}')
     logger.info(f"Worker started: processing stars {star_indices_chunk[0]}-{star_indices_chunk[-1]}")
-    min_max_avs = pd.read_csv('ysg_candidate_extinctions.csv')
+    min_avs = pd.read_csv('ysg_candidate_extinctions.csv')
 
     
     standard_band_order = ['J', 'H', 'K', 'U', 'B', 'V', 'I', 'uvm2', 'uvw1', 'uvw2']
@@ -206,10 +206,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
             
             # Use standard band order that matches synthetic models
             common_bands = [band for band in standard_band_order if band in obs_band_names]
-            min_av = min_max_avs[(min_max_avs['RA'] == RA) & (min_max_avs['DEC'] == dec)]['av_eden'].values[0]
-            max_av = min_max_avs[(min_max_avs['RA'] == RA) & (min_max_avs['DEC'] == dec)]['av_sf'].values[0]
-            max_av = np.minimum(max_av, 1.0)  # limit to 1
-            zh_av = min_max_avs[(min_max_avs['RA'] == RA) & (min_max_avs['DEC'] == dec)]['av_zh'].values[0]
+            min_av = min_avs[(min_avs['RA'] == RA) & (min_avs['DEC'] == dec)]['av_eden'].values[0]
             
             # Extract matched data arrays
             matched_obs_mags = np.array([obs_mags_dict[band] for band in common_bands])
@@ -223,19 +220,11 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
 
 
             # VECTORIZED CALCULATIONS
+            n_models = len(models_to_test)
             
-            # Pre-extract all model data, only take models with av >= min_av and av <= max_av
-            av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= max_av)
-            if np.sum(av_mask) == 0:
-                if zh_av is not np.nan and (zh_av >= min_av + 0.05):
-                    av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= zh_av)
-                else:
-                    av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= 1.0)
-            # else:
-            #         av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= 1.0)
-
+            # Pre-extract all model data, only take models with av >= min_av 
+            av_mask = models_to_test['av'] >= min_av
             filtered_models = models_to_test[av_mask]
-            n_models = len(filtered_models)
             all_model_mags = np.array([filtered_models[band+'_mag'].values for band in common_bands]).T # each row is a model, each column a band
             model_teffs = filtered_models['teff'].values
             model_loggs = filtered_models['logg'].values
