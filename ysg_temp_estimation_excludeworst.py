@@ -290,7 +290,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                         diff_squared_U_redder = diff_squared[:, U_redder_indices] # calculates (obs - model)^2 for U redder bands
                         errors_U_redder = matched_obs_errors[U_redder_indices]
                         chi2_U_redder_all = np.sum(diff_squared_U_redder / (errors_U_redder[np.newaxis, :]**2), axis=1) # sum over all models
-                        # # # Identify worst matching band for each model
+                        # # Identify worst matching band for each model
                         # residuals = modified_obs_mags[U_redder_indices][np.newaxis, :] - model_mags_shifted[:, U_redder_indices]
                         # # Create array of indices of worst fitting points
                         # worst_match_idx = np.argmax(np.abs(residuals), axis=1)
@@ -308,7 +308,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                         diff_squared_B_redder = diff_squared[:, B_redder_indices]
                         errors_B_redder = matched_obs_errors[B_redder_indices]
                         chi2_B_redder_all = np.sum(diff_squared_B_redder / (errors_B_redder[np.newaxis, :]**2), axis=1) # sum over all models
-                        # # Identify worst matching band for each model
+                        # Identify worst matching band for each model
                         # residuals = modified_obs_mags[B_redder_indices][np.newaxis, :] - model_mags_shifted[:, B_redder_indices]
                         # # Create array of indices of worst fitting points
                         # worst_match_idx = np.argmax(np.abs(residuals), axis=1)
@@ -326,7 +326,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                         diff_squared_V_redder = diff_squared[:, V_redder_indices]
                         errors_V_redder = matched_obs_errors[V_redder_indices]
                         chi2_V_redder_all = np.sum(diff_squared_V_redder / (errors_V_redder[np.newaxis, :]**2), axis=1) # sum over all models
-                        # # Identify worst matching band for each model
+                        # Identify worst matching band for each model
                         # residuals = modified_obs_mags[V_redder_indices][np.newaxis, :] - model_mags_shifted[:, V_redder_indices]
                         # # Create array of indices of worst fitting points
                         # worst_match_idx = np.argmax(np.abs(residuals), axis=1)
