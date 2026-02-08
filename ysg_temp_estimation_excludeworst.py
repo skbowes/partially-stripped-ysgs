@@ -349,8 +349,58 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                         'chi2_U_redder': chi2_U_redder_all[best_U_redder_idx],
                         'chi2_B_redder': chi2_B_redder_all[best_U_redder_idx], #if len(B_redder_indices) > 0 else np.nan,
                         'chi2_V_redder': chi2_V_redder_all[best_U_redder_idx], #if len(V_redder_indices) > 0 else np.nan,
-                        'model_filename': model_filenames[best_U_redder_idx]
+                        'model_filename': model_filenames[best_U_redder_idx],
+                        'excluded_band': np.nan
                     }
+                    
+                    # Check if excluding worst non-U band improves U_redder fit by factor of 100
+                    if len(U_redder_indices) > 2:  # Need at least 3 bands to exclude one (keeping U + 1 other)
+                        residuals_best_model = modified_obs_mags[U_redder_indices] - model_mags_shifted[best_U_redder_idx, U_redder_indices]
+                        # Find U band position in U_redder_indices
+                        U_band_pos = None
+                        for pos, idx in enumerate(U_redder_indices):
+                            if common_bands[idx] == 'U':
+                                U_band_pos = pos
+                                break
+                        
+                        if U_band_pos is not None:
+                            # Get indices of non-U bands
+                            non_U_positions = [pos for pos in range(len(U_redder_indices)) if pos != U_band_pos]
+                            if len(non_U_positions) > 1:  # Need at least 2 non-U bands to exclude one
+                                residuals_non_U = np.abs(residuals_best_model[non_U_positions])
+                                worst_band_pos_in_non_U = np.argmax(residuals_non_U)
+                                worst_band_pos = non_U_positions[worst_band_pos_in_non_U]
+                                worst_band_idx = U_redder_indices[worst_band_pos]
+                                
+                                # Calculate improvement if we exclude this band
+                                chi2_original = chi2_U_redder_all[best_U_redder_idx]
+                                chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
+                                
+                                if chi2_exclude_worst < chi2_original / 100:  # Factor of 100 improvement
+                                    # Redo fitting excluding the worst band
+                                    U_redder_indices_excluded = np.delete(U_redder_indices, worst_band_pos)
+                                    
+                                    # Recalculate chi2 for all models excluding worst band
+                                    diff_squared_U_redder_excl = diff_squared[:, U_redder_indices_excluded]
+                                    errors_U_redder_excl = matched_obs_errors[U_redder_indices_excluded]
+                                    chi2_U_redder_all_excl = np.sum(diff_squared_U_redder_excl / (errors_U_redder_excl[np.newaxis, :]**2), axis=1)
+                                    
+                                    # Find new best fit
+                                    best_U_redder_idx_excl = np.nanargmin(chi2_U_redder_all_excl)
+                                    
+                                    # Update best result if this is better
+                                    if chi2_U_redder_all_excl[best_U_redder_idx_excl] < chi2_original:
+                                        best_U_redder_result_K = {
+                                            'iteration': it, 'K_variation': K, 'teff': model_teffs[best_U_redder_idx_excl],
+                                            'logg': model_loggs[best_U_redder_idx_excl], 'av': model_avs[best_U_redder_idx_excl],
+                                            'logL': np.log10(model_lum_unscaled[best_U_redder_idx_excl] * offsets[best_U_redder_idx_excl] / 3.826e33),
+                                            'chi2_U_redder': chi2_U_redder_all_excl[best_U_redder_idx_excl],
+                                            'chi2_B_redder': chi2_B_redder_all[best_U_redder_idx_excl],
+                                            'chi2_V_redder': chi2_V_redder_all[best_U_redder_idx_excl],
+                                            'model_filename': model_filenames[best_U_redder_idx_excl],
+                                            'excluded_band': common_bands[worst_band_idx]
+                                        }
+                    
                     best_fits_U_redder_K.append(best_U_redder_result_K)
                     
                     # Best B_redder fit
@@ -362,8 +412,58 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                         'chi2_U_redder': chi2_U_redder_all[best_B_redder_idx],
                         'chi2_B_redder': chi2_B_redder_all[best_B_redder_idx],
                         'chi2_V_redder': chi2_V_redder_all[best_B_redder_idx],
-                        'model_filename': model_filenames[best_B_redder_idx]
+                        'model_filename': model_filenames[best_B_redder_idx],
+                        'excluded_band': np.nan
                     }
+                    
+                    # Check if excluding worst non-B band improves B_redder fit by factor of 100
+                    if len(B_redder_indices) > 2:  # Need at least 3 bands to exclude one (keeping B + 1 other)
+                        residuals_best_model = modified_obs_mags[B_redder_indices] - model_mags_shifted[best_B_redder_idx, B_redder_indices]
+                        # Find B band position in B_redder_indices
+                        B_band_pos = None
+                        for pos, idx in enumerate(B_redder_indices):
+                            if common_bands[idx] == 'B':
+                                B_band_pos = pos
+                                break
+                        
+                        if B_band_pos is not None:
+                            # Get indices of non-B bands
+                            non_B_positions = [pos for pos in range(len(B_redder_indices)) if pos != B_band_pos]
+                            if len(non_B_positions) > 1:  # Need at least 2 non-B bands to exclude one
+                                residuals_non_B = np.abs(residuals_best_model[non_B_positions])
+                                worst_band_pos_in_non_B = np.argmax(residuals_non_B)
+                                worst_band_pos = non_B_positions[worst_band_pos_in_non_B]
+                                worst_band_idx = B_redder_indices[worst_band_pos]
+                                
+                                # Calculate improvement if we exclude this band
+                                chi2_original = chi2_B_redder_all[best_B_redder_idx]
+                                chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
+                                
+                                if chi2_exclude_worst < chi2_original / 100:  # Factor of 100 improvement
+                                    # Redo fitting excluding the worst band
+                                    B_redder_indices_excluded = np.delete(B_redder_indices, worst_band_pos)
+                                    
+                                    # Recalculate chi2 for all models excluding worst band
+                                    diff_squared_B_redder_excl = diff_squared[:, B_redder_indices_excluded]
+                                    errors_B_redder_excl = matched_obs_errors[B_redder_indices_excluded]
+                                    chi2_B_redder_all_excl = np.sum(diff_squared_B_redder_excl / (errors_B_redder_excl[np.newaxis, :]**2), axis=1)
+                                    
+                                    # Find new best fit
+                                    best_B_redder_idx_excl = np.nanargmin(chi2_B_redder_all_excl)
+                                    
+                                    # Update best result if this is better
+                                    if chi2_B_redder_all_excl[best_B_redder_idx_excl] < chi2_original:
+                                        best_B_redder_result_K = {
+                                            'iteration': it, 'K_variation': K, 'teff': model_teffs[best_B_redder_idx_excl],
+                                            'logg': model_loggs[best_B_redder_idx_excl], 'av': model_avs[best_B_redder_idx_excl],
+                                            'logL': np.log10(model_lum_unscaled[best_B_redder_idx_excl] * offsets[best_B_redder_idx_excl] / 3.826e33),
+                                            'chi2_U_redder': chi2_U_redder_all[best_B_redder_idx_excl],
+                                            'chi2_B_redder': chi2_B_redder_all_excl[best_B_redder_idx_excl],
+                                            'chi2_V_redder': chi2_V_redder_all[best_B_redder_idx_excl],
+                                            'model_filename': model_filenames[best_B_redder_idx_excl],
+                                            'excluded_band': common_bands[worst_band_idx]
+                                        }
+                    
                     best_fits_B_redder_K.append(best_B_redder_result_K)
 
                     best_V_redder_idx = np.nanargmin(chi2_V_redder_all)
@@ -374,10 +474,60 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                         'chi2_U_redder': chi2_U_redder_all[best_V_redder_idx],
                         'chi2_B_redder': chi2_B_redder_all[best_V_redder_idx],
                         'chi2_V_redder': chi2_V_redder_all[best_V_redder_idx],
-                        'model_filename': model_filenames[best_V_redder_idx]
+                        'model_filename': model_filenames[best_V_redder_idx],
+                        'excluded_band': np.nan
                     }
+                    
+                    # Check if excluding worst non-V band improves V_redder fit by factor of 100
+                    if len(V_redder_indices) > 2:  # Need at least 3 bands to exclude one (keeping V + 1 other)
+                        residuals_best_model = modified_obs_mags[V_redder_indices] - model_mags_shifted[best_V_redder_idx, V_redder_indices]
+                        # Find V band position in V_redder_indices
+                        V_band_pos = None
+                        for pos, idx in enumerate(V_redder_indices):
+                            if common_bands[idx] == 'V':
+                                V_band_pos = pos
+                                break
+                        
+                        if V_band_pos is not None:
+                            # Get indices of non-V bands
+                            non_V_positions = [pos for pos in range(len(V_redder_indices)) if pos != V_band_pos]
+                            if len(non_V_positions) > 1:  # Need at least 2 non-V bands to exclude one
+                                residuals_non_V = np.abs(residuals_best_model[non_V_positions])
+                                worst_band_pos_in_non_V = np.argmax(residuals_non_V)
+                                worst_band_pos = non_V_positions[worst_band_pos_in_non_V]
+                                worst_band_idx = V_redder_indices[worst_band_pos]
+                                
+                                # Calculate improvement if we exclude this band
+                                chi2_original = chi2_V_redder_all[best_V_redder_idx]
+                                chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
+                                
+                                if chi2_exclude_worst < chi2_original / 100:  # Factor of 100 improvement
+                                    # Redo fitting excluding the worst band
+                                    V_redder_indices_excluded = np.delete(V_redder_indices, worst_band_pos)
+                                    
+                                    # Recalculate chi2 for all models excluding worst band
+                                    diff_squared_V_redder_excl = diff_squared[:, V_redder_indices_excluded]
+                                    errors_V_redder_excl = matched_obs_errors[V_redder_indices_excluded]
+                                    chi2_V_redder_all_excl = np.sum(diff_squared_V_redder_excl / (errors_V_redder_excl[np.newaxis, :]**2), axis=1)
+                                    
+                                    # Find new best fit
+                                    best_V_redder_idx_excl = np.nanargmin(chi2_V_redder_all_excl)
+                                    
+                                    # Update best result if this is better
+                                    if chi2_V_redder_all_excl[best_V_redder_idx_excl] < chi2_original:
+                                        best_V_redder_result_K = {
+                                            'iteration': it, 'K_variation': K, 'teff': model_teffs[best_V_redder_idx_excl],
+                                            'logg': model_loggs[best_V_redder_idx_excl], 'av': model_avs[best_V_redder_idx_excl],
+                                            'logL': np.log10(model_lum_unscaled[best_V_redder_idx_excl] * offsets[best_V_redder_idx_excl] / 3.826e33),
+                                            'chi2_U_redder': chi2_U_redder_all[best_V_redder_idx_excl],
+                                            'chi2_B_redder': chi2_B_redder_all[best_V_redder_idx_excl],
+                                            'chi2_V_redder': chi2_V_redder_all_excl[best_V_redder_idx_excl],
+                                            'model_filename': model_filenames[best_V_redder_idx_excl],
+                                            'excluded_band': common_bands[worst_band_idx]
+                                        }
+                    
                     best_fits_V_redder_K.append(best_V_redder_result_K)
-
+                
 
                 # Here is where I'll store the best results from iterating on K:
                 # take best among K variations for this iteration
@@ -392,6 +542,9 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                 chi2_V_redder_values_K = [r['chi2_V_redder'] for r in best_fits_V_redder_K]
                 best_V_redder_K_idx = np.nanargmin(chi2_V_redder_values_K)
                 best_fits_V_redder.append(best_fits_V_redder_K[best_V_redder_K_idx])
+
+
+                
 
 
 
@@ -416,7 +569,8 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     'chi2_U_redder': fit['chi2_U_redder'],
                     'chi2_B_redder': fit['chi2_B_redder'],  # Include both chi2 values for comparison
                     'chi2_V_redder': fit['chi2_V_redder'],
-                    'model_filename': fit['model_filename']
+                    'model_filename': fit['model_filename'],
+                    'excluded_band': fit.get('excluded_band', np.nan)
                 }
                 U_redder_data.append(U_redder_result)
                 
@@ -438,7 +592,8 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     'chi2_U_redder': fit['chi2_U_redder'],
                     'chi2_B_redder': fit['chi2_B_redder'],  # Include both chi2 values for comparison
                     'chi2_V_redder': fit['chi2_V_redder'],
-                    'model_filename': fit['model_filename']
+                    'model_filename': fit['model_filename'],
+                    'excluded_band': fit.get('excluded_band', np.nan)
                 }
                 B_redder_data.append(B_redder_result)
             df_B_redder = pd.DataFrame(B_redder_data)
@@ -462,7 +617,8 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     'chi2_U_redder': fit['chi2_U_redder'],  # Include both chi2 values for comparison
                     'chi2_B_redder': fit['chi2_B_redder'],
                     'chi2_V_redder': fit['chi2_V_redder'],
-                    'model_filename': fit['model_filename']
+                    'model_filename': fit['model_filename'],
+                    'excluded_band': fit.get('excluded_band', np.nan)
                 }
                 V_redder_data.append(V_redder_result)
                 
@@ -526,6 +682,11 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                 av_values_U_redder = [r['av'] for r in best_fits_U_redder]
                 chi2_U_redder_values = [r['chi2_U_redder'] for r in best_fits_U_redder]
                 
+                # Exclusion statistics for U_redder
+                excluded_bands_U_redder = [r.get('excluded_band') for r in best_fits_U_redder if pd.notna(r.get('excluded_band'))]
+                n_excluded_U_redder = len(excluded_bands_U_redder)
+                most_common_excluded_U_redder = pd.Series(excluded_bands_U_redder).mode().iloc[0] if excluded_bands_U_redder else np.nan
+                
                 summary.update({
                     'n_fits_U_redder': len(best_fits_U_redder),
                     'teff_mean_U_redder': np.mean(teff_values_U_redder),
@@ -555,7 +716,9 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     'av_16perc_U_redder': np.percentile(av_values_U_redder, 16),
                     'av_50perc_U_redder': np.percentile(av_values_U_redder, 50),
                     'av_84perc_U_redder': np.percentile(av_values_U_redder, 84),
-                    'chi2_U_redder_mean': np.mean(chi2_U_redder_values)
+                    'chi2_U_redder_mean': np.mean(chi2_U_redder_values),
+                    'n_excluded_U_redder': n_excluded_U_redder,
+                    'most_common_excluded_U_redder': most_common_excluded_U_redder
                 })
             
             # Cut band distribution statistics
@@ -565,6 +728,11 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                 logg_values_B_redder = [r['logg'] for r in best_fits_B_redder]
                 av_values_B_redder = [r['av'] for r in best_fits_B_redder]
                 chi2_B_redder_values = [r['chi2_B_redder'] for r in best_fits_B_redder]
+                
+                # Exclusion statistics for B_redder
+                excluded_bands_B_redder = [r.get('excluded_band') for r in best_fits_B_redder if pd.notna(r.get('excluded_band'))]
+                n_excluded_B_redder = len(excluded_bands_B_redder)
+                most_common_excluded_B_redder = pd.Series(excluded_bands_B_redder).mode().iloc[0] if excluded_bands_B_redder else np.nan
                     
                 summary.update({
                     'n_fits_B_redder': len(best_fits_B_redder),
@@ -595,7 +763,9 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     'av_16perc_B_redder': np.percentile(av_values_B_redder, 16),
                     'av_50perc_B_redder': np.percentile(av_values_B_redder, 50),
                     'av_84perc_B_redder': np.percentile(av_values_B_redder, 84),
-                    'chi2_B_redder_mean': np.mean(chi2_B_redder_values)
+                    'chi2_B_redder_mean': np.mean(chi2_B_redder_values),
+                    'n_excluded_B_redder': n_excluded_B_redder,
+                    'most_common_excluded_B_redder': most_common_excluded_B_redder
                 })
             
             if best_fits_V_redder:
@@ -604,6 +774,11 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                 logg_values_V_redder = [r['logg'] for r in best_fits_V_redder]
                 av_values_V_redder = [r['av'] for r in best_fits_V_redder]
                 chi2_V_redder_values = [r['chi2_V_redder'] for r in best_fits_V_redder]
+                
+                # Exclusion statistics for V_redder
+                excluded_bands_V_redder = [r.get('excluded_band') for r in best_fits_V_redder if pd.notna(r.get('excluded_band'))]
+                n_excluded_V_redder = len(excluded_bands_V_redder)
+                most_common_excluded_V_redder = pd.Series(excluded_bands_V_redder).mode().iloc[0] if excluded_bands_V_redder else np.nan
                     
                 summary.update({
                     'n_fits_V_redder': len(best_fits_V_redder),
@@ -634,8 +809,33 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                     'av_16perc_V_redder': np.percentile(av_values_V_redder, 16),
                     'av_50perc_V_redder': np.percentile(av_values_V_redder, 50),
                     'av_84perc_V_redder': np.percentile(av_values_V_redder, 84),
-                    'chi2_V_redder_mean': np.mean(chi2_V_redder_values)
+                    'chi2_V_redder_mean': np.mean(chi2_V_redder_values),
+                    'n_excluded_V_redder': n_excluded_V_redder,
+                    'most_common_excluded_V_redder': most_common_excluded_V_redder
                 })
+            
+            # Overall exclusion statistics across all band sets
+            all_excluded_bands = []
+            total_exclusions = 0
+            if best_fits_U_redder:
+                excluded_U = [r.get('excluded_band') for r in best_fits_U_redder if pd.notna(r.get('excluded_band'))]
+                all_excluded_bands.extend(excluded_U)
+                total_exclusions += len(excluded_U)
+            if best_fits_B_redder:
+                excluded_B = [r.get('excluded_band') for r in best_fits_B_redder if pd.notna(r.get('excluded_band'))]
+                all_excluded_bands.extend(excluded_B)
+                total_exclusions += len(excluded_B)
+            if best_fits_V_redder:
+                excluded_V = [r.get('excluded_band') for r in best_fits_V_redder if pd.notna(r.get('excluded_band'))]
+                all_excluded_bands.extend(excluded_V)
+                total_exclusions += len(excluded_V)
+            
+            most_common_excluded_overall = pd.Series(all_excluded_bands).mode().iloc[0] if all_excluded_bands else np.nan
+            
+            summary.update({
+                'total_exclusions': total_exclusions,
+                'most_common_excluded_overall': most_common_excluded_overall
+            })
             
             # Debug: Log some statistics for verification 
             has_U_redder = 'teff_U_redder' in summary
@@ -707,7 +907,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, computed_m
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_v5.csv'
+        summary_filename = f'ysg_temp_fitting_summary_v6.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()
