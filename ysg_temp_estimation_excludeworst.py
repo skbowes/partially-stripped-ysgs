@@ -376,7 +376,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                                 chi2_original = chi2_U_redder_all[best_U_redder_idx]
                                 chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
                                 
-                                if chi2_exclude_worst < chi2_original / 100:  # Factor of 100 improvement
+                                if chi2_exclude_worst < chi2_original / 10:  # Factor of 100 improvement
                                     # Redo fitting excluding the worst band
                                     U_redder_indices_excluded = np.delete(U_redder_indices, worst_band_pos)
                                     
@@ -439,7 +439,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                                 chi2_original = chi2_B_redder_all[best_B_redder_idx]
                                 chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
                                 
-                                if chi2_exclude_worst < chi2_original / 100:  # Factor of 100 improvement
+                                if chi2_exclude_worst < chi2_original / 10:  # Factor of 100 improvement
                                     # Redo fitting excluding the worst band
                                     B_redder_indices_excluded = np.delete(B_redder_indices, worst_band_pos)
                                     
@@ -501,7 +501,7 @@ def process_star_chunk_vectorized(star_indices_chunk, computed_models, coords, d
                                 chi2_original = chi2_V_redder_all[best_V_redder_idx]
                                 chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
                                 
-                                if chi2_exclude_worst < chi2_original / 100:  # Factor of 100 improvement
+                                if chi2_exclude_worst < chi2_original / 10:  # Factor of 100 improvement
                                     # Redo fitting excluding the worst band
                                     V_redder_indices_excluded = np.delete(V_redder_indices, worst_band_pos)
                                     
@@ -907,7 +907,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, computed_m
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_v6.csv'
+        summary_filename = f'ysg_temp_fitting_summary_v5.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()
