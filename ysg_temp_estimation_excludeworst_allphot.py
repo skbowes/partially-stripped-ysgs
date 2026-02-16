@@ -41,9 +41,9 @@ def load_data():
     coords = pd.read_csv('merged_smc_lmc_coords.csv', sep=r'\s+', comment='#', names=['ra', 'dec'])
     df_lmc = pd.read_csv('./annas_candidates/final_lmc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
     df_smc = pd.read_csv('./annas_candidates/final_smc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
-    choose_phot = pd.read_csv('choose_photometry.csv')
+    choose_phot = pd.read_csv('choose_photometry_v2.csv')
     # Load synthetic photometry models
-    computed_models = pd.read_csv('synth_phot_all_models_allphot.csv')
+    computed_models = pd.read_csv('synth_phot_all_models_allphot_v2.csv')
     return coords, df_smc, df_lmc, choose_phot, computed_models
 
 
@@ -171,6 +171,7 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, choose_phot, flux=True, 
             flux_errors.append(flux_err_ergs)
             mags.append(mag)
             mag_errors.append(mag_err)
+            band_names.append(band)
     
     # Sort by longest to shortest wavelength
     sorted_indices = np.argsort(wavelengths)[::-1]
@@ -179,6 +180,7 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, choose_phot, flux=True, 
     flux_errors = np.array(flux_errors)[sorted_indices]
     mags = np.array(mags)[sorted_indices]
     mag_errors = np.array(mag_errors)[sorted_indices]
+    # didnt have this line before:
     band_names = np.array(band_names)[sorted_indices]
 
     return wavelengths, fluxes, flux_errors, mags, mag_errors, band_names
@@ -213,20 +215,31 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
         output_filename = f'temp_fitting/{RA}_{dec}.csv'
 
         try:
-            obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, show=False)
+            obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, choose_phot, show=False)
             obs_wavelengths, obs_fluxes, obs_flux_errors, obs_mags, obs_mag_errors, obs_band_names = obs
 
             choose_phot_options = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS']
-            choose_phot_row = choose_phot[(choose_phot['RA'] == RA) & (choose_phot['DEC'] == dec)]
+            choose_phot_row = choose_phot[(choose_phot['RA'] == RA) & (choose_phot['DEC'] == dec)].iloc[0]
             if choose_phot_row['choose_MCPS'] == 1:
-                choose_phot_options.append('Umag_MCPS', 'Bmag_MCPS', 'Vmag_MCPS', 'Imag_MCPS')
+                choose_phot_options.extend(['Umag_MCPS', 'Bmag_MCPS', 'Vmag_MCPS', 'Imag_MCPS'])
                 if choose_phot_row['choose_APASS'] == 1:
-                    choose_phot_options.append('Bmag_APASS', 'Vmag_APASS', 'gmag_APASS', 'rmag_APASS', 'imag_APASS')
+                    choose_phot_options.extend(['Bmag_APASS', 'Vmag_APASS', 'gmag_APASS', 'rmag_APASS', 'imag_APASS'])
+                if choose_phot_row['choose_APASS'] == 0 and 'Bmag_MCPS' in obs_band_names:
+                    if pd.isna(obs_mags[list(obs_band_names).index('Bmag_MCPS')]):
+                        #could add a print statement here
+                        choose_phot_options.append('Bmag_APASS')
+                if choose_phot_row['choose_APASS'] == 0 and 'Vmag_MCPS' in obs_band_names: 
+                    if pd.isna(obs_mags[list(obs_band_names).index('Vmag_MCPS')]):
+                        #could add a print statement here
+                        choose_phot_options.append('Vmag_APASS')
             elif choose_phot_row['choose_APASS'] == 1:
-                choose_phot_options.append('Bmag_APASS', 'Vmag_APASS', 'gmag_APASS', 'rmag_APASS', 'imag_APASS')
+                choose_phot_options.extend(['Bmag_APASS', 'Vmag_APASS', 'gmag_APASS', 'rmag_APASS', 'imag_APASS'])
                  # Add MCPS U, since APASS doesn't have U and we want to keep it if APASS is chosen
                 choose_phot_options.append('Umag_MCPS')
-
+                if choose_phot_row['choose_MCPS'] == 0 and 'Bmag_APASS' not in obs_band_names:
+                    choose_phot_options.append('Bmag_MCPS')
+                if choose_phot_row['choose_MCPS'] == 0 and 'Vmag_APASS' not in obs_band_names: 
+                    choose_phot_options.append('Vmag_MCPS')
 
             # Create dictionaries for observed data
             obs_mags_dict = dict(zip(obs_band_names, obs_mags))
@@ -266,7 +279,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
 
             filtered_models = models_to_test[av_mask]
             n_models = len(filtered_models)
-            all_model_mags = np.array([filtered_models[band+'_mag'].values for band in common_bands]).T # each row is a model, each column a band
+            all_model_mags = np.array([filtered_models[band].values for band in common_bands]).T # each row is a model, each column a band
             model_teffs = filtered_models['teff'].values
             model_loggs = filtered_models['logg'].values
             model_avs = filtered_models['av'].values
@@ -278,8 +291,8 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
             V_redder_indices = np.array([j for j, band in enumerate(common_bands) if band in V_redder_bands])
             B_redder_indices = np.array([k for k, band in enumerate(common_bands) if band in B_redder_bands])
             U_redder_indices = np.array([h for h, band in enumerate(common_bands) if band in U_redder_bands])
-            ref_idx = common_bands.index('K')
-            k_idx = common_bands.index('K')
+            ref_idx = common_bands.index('Kmag_2MASS')
+            k_idx = common_bands.index('Kmag_2MASS')
 
             # Generate sampled spectra
             sampled_mags = np.zeros((len(matched_obs_mags), iterations))
@@ -864,7 +877,8 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
             
             summary.update({
                 'total_exclusions': total_exclusions,
-                'most_common_excluded_overall': most_common_excluded_overall
+                'most_common_excluded_overall': most_common_excluded_overall,
+                'bands_used_for_fitting': ','.join(choose_phot_options)  # Save which bands were used
             })
             
             # Debug: Log some statistics for verification 
