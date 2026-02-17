@@ -7,9 +7,9 @@ hr_diagrams/
 
 # folders I never check, caches and checkpoints
 .ipynb_checkpoints/
-logs_parallel/
+synth_phot_temp_estimation/logs_parallel/
 __pycache__/
-synth_phot_sed_fit_ex/
+synth_phot_temp_estimation/synth_phot_sed_fit_ex/
 
 # folder containing extra old copies of python and jupyter files
 extras/
@@ -22,12 +22,12 @@ mag_amp_divisions/
 sub2/
 sub2025/
 sub2025_V2/
-pysynphot_data/grid/bosz/r2000/m-0.75/
-pysynphot_data/grid/bosz/r2000/m-0.25/
-pysynphot_data/grid/pickles/
-pysynphot_data/pickles_catalog.csv
-pysynphot_data/grid/bosz/r500/
-temp_fitting/
+synth_phot_temp_estimation/pysynphot_data/grid/bosz/r2000/m-0.75/
+synth_phot_temp_estimation/pysynphot_data/grid/bosz/r2000/m-0.25/
+synth_phot_temp_estimation/pysynphot_data/grid/pickles/
+synth_phot_temp_estimation/pysynphot_data/pickles_catalog.csv
+synth_phot_temp_estimation/pysynphot_data/grid/bosz/r500/
+synth_phot_temp_estimation/temp_fitting/
 crossmatch_contamination/
 dustmaps_data/
 
@@ -47,9 +47,4 @@ merged_smc_lmc_coords_with_index.csv
 ra_dec_angDist.csv
 ysg_temp_fitting_results.csv
 661446200650-light-curves.csv
-chunk_1.fits
-chunk_2.fits
-chunk_3.fits
-chunk_4.fits
-chunk_5.fits
 

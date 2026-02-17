@@ -38,12 +38,12 @@ def load_data():
     logger = logging.getLogger('ysg_fitting')
     logger.info("Loading data files...")
     # Load coordinates, SMC and LMC candidate data
-    coords = pd.read_csv('merged_smc_lmc_coords.csv', sep=r'\s+', comment='#', names=['ra', 'dec'])
-    df_lmc = pd.read_csv('./annas_candidates/final_lmc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
-    df_smc = pd.read_csv('./annas_candidates/final_smc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
+    coords = pd.read_csv('../merged_smc_lmc_coords.csv', sep=r'\s+', comment='#', names=['ra', 'dec'])
+    df_lmc = pd.read_csv('../annas_candidates/final_lmc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
+    df_smc = pd.read_csv('../annas_candidates/final_smc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
     choose_phot = pd.read_csv('choose_photometry_v2.csv')
     # Load synthetic photometry models
-    computed_models = pd.read_csv('synth_phot_all_models_allphot_v2.csv')
+    computed_models = pd.read_csv('synth_phot_all_models_allphot_gordon.csv')
     return coords, df_smc, df_lmc, choose_phot, computed_models
 
 
@@ -952,7 +952,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, choose_pho
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_v7.csv'
+        summary_filename = f'ysg_temp_fitting_summary_v8.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()

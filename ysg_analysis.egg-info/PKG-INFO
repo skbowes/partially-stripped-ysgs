@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: ysg-analysis
+Version: 0.1.0
+Summary: YSG candidate analysis tools
+Requires-Python: >=3.7

@@ -7,11 +7,15 @@ import scipy as sp
 from astropy.timeseries import LombScargle
 from matplotlib import gridspec
 from scipy.signal import find_peaks
+from pathlib import Path
+
+# Get the directory where this module is located
+_MODULE_DIR = Path(__file__).parent
 
 # offsets_df = pd.read_csv('offsets.csv')
-coords = pd.read_csv('merged_smc_lmc_coords.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
-df_lmc = pd.read_csv('./annas_candidates/final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
-df_smc = pd.read_csv('./annas_candidates/final_smc_ysgcands.csv', comment='#') # , sep="\\s+"
+coords = pd.read_csv(_MODULE_DIR / 'merged_smc_lmc_coords.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
+df_lmc = pd.read_csv(_MODULE_DIR / 'annas_candidates/final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
+df_smc = pd.read_csv(_MODULE_DIR / 'annas_candidates/final_smc_ysgcands.csv', comment='#') # , sep="\\s+"
 
 
 def mean_med_flux(index, df=None, telescopes=None, g=True, correct_offsets=True):
@@ -148,7 +152,7 @@ def fit_plotter_flux(index, df=None, telescopes=None, tail=1, g=True, correct_of
     dec = coords['DEC'][index]
     print(f'RA: {RA}, DEC: {dec}')
     # plt.title(f'{RA} {dec} (g-band)', fontsize=14)
-    # plt.savefig(f'lc_plots_2025/{RA}{dec}_lcg.png', dpi=300, bbox_inches='tight')
+    # plt.savefig(f'figs/lc_plots_2025/{RA}{dec}_lcg.png', dpi=300, bbox_inches='tight')
     plt.show()
     plt.close(fig)
 
@@ -854,8 +858,8 @@ def plot_periodogram(index, frequency, power, best_freq, false_alarm_level, titl
     plt.grid(True, alpha=0.3)
     # plt.title(f'{RA} {dec} periodogram', fontsize=14)
     # plt.tight_layout()
-    # plt.savefig(f'lc_plots/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'lc_plots_2025/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
+    # plt.savefig(f'figs/lc_plots/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
+    plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
     plt.show()
     plt.close(fig)
 
@@ -921,8 +925,8 @@ def plot_phase_fold(index, best_period, df=None, telescopes=None, g=True, phase_
     plt.grid(True, alpha=0.3)
     plt.title(f'{RA} {dec} (2 phases with period = {best_period:.2f} days)', fontsize=14)
     plt.tight_layout()
-    # plt.savefig(f'lc_plots/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'lc_plots_2025/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
+    # plt.savefig(f'figs/lc_plots/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
+    plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
     plt.show()
 
     # Bin and find amplitude of narrow bin
@@ -1556,5 +1560,5 @@ def compute_lomb_scargle_old(index, auto=False, samples_per_peak=5, report = Tru
 #     plt.grid(True, alpha=0.3)
 #     plt.title(f'{RA} {dec} periodogram', fontsize=14)
 #     # plt.tight_layout()
-#     # plt.savefig(f'lc_plots/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
+#     # plt.savefig(f'figs/lc_plots/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
 #     # plt.show()

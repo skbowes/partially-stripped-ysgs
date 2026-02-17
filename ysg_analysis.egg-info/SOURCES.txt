@@ -1,0 +1,8 @@
+README.md
+metrics.py
+pyproject.toml
+view_and_clean.py
+ysg_analysis.egg-info/PKG-INFO
+ysg_analysis.egg-info/SOURCES.txt
+ysg_analysis.egg-info/dependency_links.txt
+ysg_analysis.egg-info/top_level.txt

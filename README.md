@@ -21,7 +21,7 @@ If you want to just play with the SED fitting or with overall statistics, you wo
 
 Playing around!
 
-Use the notebook temp_lum_results.ipynb for playing around. It contains the functions for making all the plots I’ve been showing you the past few weeks.
+Use the notebook temp_lum_results_excludeworst_allphot.ipynb for playing around. It contains the functions for making all the plots I’ve been showing you the past few weeks.
 
 Probably the most important thing to note is that if you are using a plotting function that is showing the properties of one star (rather than all on the HR diagram for example), then I call the star by the index number in coords (the variable defined in all my files/for all my functions for the file merged_smc_lmc_coords.csv). It simply contains the coordinates for all the YSGs, both SMC and LMC. The first set of coordinates is index 0, the second index 1, and goes all the way to star 848. So for most of my functions, you just pass the index of the star you want to look at (say, fit_models_to_star_flux(4)) and it’ll show the SED and model spectra for the fourth star on that list.
 
@@ -31,7 +31,7 @@ Other important files that are called on in this file:
 summary_results15.csv: This is the file that contains the results of our variability analysis so far! It contains Anna's old T and L estimations and my estimations of the dominant period.
 
 synth_phot_all_models.csv: The pre-computed synthetic photometry.
-Created using temp_estimation.ipynb
+Created using temp_estimation_prep.ipynb
 
 ysg_temp_fitting_summary_v2: This is the results of fitting for the temperatures (comparing observed to synthetic photometry). Stores the best fit (means, medians) information from the comparison.
 Created using python ysg_temp_estimation.py --stars 848 --cores 8 (or however many cores you want to use)
@@ -39,4 +39,4 @@ Created using python ysg_temp_estimation.py --stars 848 --cores 8 (or however ma
 Other details:
 If you DO care about seeing the histograms for parameters for a certain star and you downloaded the /temp_fitting directory noted above, you can comment in a call to the histo() function to see this.
 
-Most of the past work I did is stored as functions in metrics.py. This is already imported at the top of the notebook, and you can simply run the info() function to see most of the plots for any given star (lightcurve before and after correction, periodogram, SED in Jy, etc). The functions that perform the actual cleaning of data are contained in view_and_clean.py.
+Most of the past work I did (mainly on the lightcurves) is stored as functions in metrics.py. This is already imported at the top of the notebook, and you can simply run the info() function to see most of the plots for any given star (lightcurve before and after correction, periodogram, SED in Jy, etc). The functions that perform the actual cleaning of data are contained in view_and_clean.py.

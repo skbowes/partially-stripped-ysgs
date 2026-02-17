@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ysg-analysis"
+version = "0.1.0"
+description = "YSG candidate analysis tools"
+requires-python = ">=3.7"
+dependencies = []
+
+[tool.setuptools]
+py-modules = ["metrics", "view_and_clean"]

@@ -186,28 +186,28 @@ def df_extract(index, g = True, seeoutliers=False, report=False):
     RA_hms1 = RA_hms[0]
     dec_dms1 = dec_dms[0]
     if g == True:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
+        file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
         if not os.path.isfile(file_path):
             RA_hms2 = RA_hms[1]
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
+            file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
             if not os.path.isfile(file_path):
                 dec_dms2 = dec_dms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
+                file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
                 if not os.path.isfile(file_path):
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
+                    file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
                     if not os.path.isfile(file_path):
                         print(f"File not found for target {index}")
                         print(RA, dec)
     if g == False:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
+        file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
         if not os.path.isfile(file_path):
             RA_hms2 = RA_hms[1]
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
+            file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
             if not os.path.isfile(file_path):
                 dec_dms2 = dec_dms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
+                file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
                 if not os.path.isfile(file_path):
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
+                    file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
                     if not os.path.isfile(file_path):
                         print(f"File not found for target {index}")
                         print(RA, dec)
@@ -280,7 +280,7 @@ def df_extract_v2(index, filematcher_result = None, g = True, seeoutliers=False,
     # new, works for directory sub2025, where new (2025) lcs are stored
 
     if v2 == True:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025_V2', f'{int(filematcher_result)}.csv')
+        file_path = os.path.join(str(_MODULE_DIR), 'sub2025_V2', f'{int(filematcher_result)}.csv')
         if not os.path.isfile(file_path):
             print(f"File not found for target {index}")
             print(RA, dec)
@@ -297,28 +297,28 @@ def df_extract_v2(index, filematcher_result = None, g = True, seeoutliers=False,
         RA_hms1 = RA_hms[0]
         dec_dms1 = dec_dms[0]
         if g == True:
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
+            file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
             if not os.path.isfile(file_path):
                 RA_hms2 = RA_hms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
+                file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
                 if not os.path.isfile(file_path):
                     dec_dms2 = dec_dms[1]
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
+                    file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
                     if not os.path.isfile(file_path):
-                        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
+                        file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
                         if not os.path.isfile(file_path):
                             print(f"File not found for target {index}")
                             print(RA, dec)
         if g == False:
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
+            file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
             if not os.path.isfile(file_path):
                 RA_hms2 = RA_hms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
+                file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
                 if not os.path.isfile(file_path):
                     dec_dms2 = dec_dms[1]
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
+                    file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
                     if not os.path.isfile(file_path):
-                        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
+                        file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
                         if not os.path.isfile(file_path):
                             print(f"File not found for target {index}")
                             print(RA, dec)
@@ -461,8 +461,8 @@ def individual_plotter(index, tail=1, g=True, seeoutliers=False, report=True):
     plt.grid(True)
     plt.gca().invert_yaxis()  # Invert y-axis since smaller magnitudes are brighter
     plt.tick_params(axis='both', direction='in')
-    # plt.savefig(f'figs/offsets_examples/{RA}{dec}_g.png')
-    # plt.savefig(f'figs/lc_plots/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
+    # plt.savefig(f'offsets_examples/{RA}{dec}_g.png')
+    # plt.savefig(f'lc_plots/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
     plt.show()
 
 def individual_plotter_v2(index, filematcher_result=None, tail=1, g=True, seeoutliers=False, report=True):  
@@ -542,8 +542,8 @@ def individual_plotter_v2(index, filematcher_result=None, tail=1, g=True, seeout
     plt.grid(True)
     plt.gca().invert_yaxis()  # Invert y-axis since smaller magnitudes are brighter
     plt.tick_params(axis='both', direction='in')
-    # plt.savefig(f'figs/offsets_examples/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
-    # plt.savefig(f'figs/lc_plots/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
+    # plt.savefig(f'offsets_examples/{RA}{dec}_g.png')
+    # plt.savefig(f'lc_plots/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
     plt.show()
 
 
@@ -612,8 +612,8 @@ def individual_plotter_old(index, g=True, seeoutliers=False, report=True):
     plt.grid(True)
     plt.gca().invert_yaxis()  # Invert y-axis since smaller magnitudes are brighter
     plt.tick_params(axis='both', direction='in')
-    # plt.savefig(f'figs/offsets_examples/{RA}{dec}_g.png')
-    # plt.savefig(f'figs/lc_plots/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
+    # plt.savefig(f'offsets_examples/{RA}{dec}_g.png')
+    # plt.savefig(f'lc_plots/{RA}{dec}_g.png', bbox_inches='tight', dpi=300)
     plt.show()
 
 
@@ -697,28 +697,28 @@ def df_extract_pre_skypatrolv2(index, g = True, seeoutliers=False, report=False)
     RA_hms1 = RA_hms[0]
     dec_dms1 = dec_dms[0]
     if g == True:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
+        file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
         if not os.path.isfile(file_path):
             RA_hms2 = RA_hms[1]
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
+            file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
             if not os.path.isfile(file_path):
                 dec_dms2 = dec_dms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
+                file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
                 if not os.path.isfile(file_path):
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
+                    file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
                     if not os.path.isfile(file_path):
                         print(f"File not found for target {index}")
                         print(RA, dec)
     if g == False:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
+        file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
         if not os.path.isfile(file_path):
             RA_hms2 = RA_hms[1]
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
+            file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
             if not os.path.isfile(file_path):
                 dec_dms2 = dec_dms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
+                file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
                 if not os.path.isfile(file_path):
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
+                    file_path = os.path.join(str(_MODULE_DIR), 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
                     if not os.path.isfile(file_path):
                         print(f"File not found for target {index}")
                         print(RA, dec)
@@ -1088,7 +1088,7 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
         ax1.legend(loc='upper left')
         ax1.grid(True)
         plt.title(f'{ra} {dec} Corrected lightcurve')
-        plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{ra}{dec}_lcg.png', bbox_inches='tight', dpi=300)
+        plt.savefig(f'lc_plots_2025/{ra}{dec}_lcg.png', bbox_inches='tight', dpi=300)
         plt.show()
         plt.close(fig)
 

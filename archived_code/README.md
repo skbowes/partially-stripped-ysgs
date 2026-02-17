@@ -33,7 +33,7 @@ Other important files that are called on in this file:
 summary_results15.csv: This is the file that contains the results of our variability analysis so far! It contains Anna's old T and L estimations and my estimations of the dominant period.
 
 synth_phot_all_models.csv: The pre-computed synthetic photometry.
-Created using temp_estimation.ipynb
+Created using temp_estimation_prep.ipynb
 
 ysg_temp_fitting_summary_v2: This is the results of fitting for the temperatures (comparing observed to synthetic photometry). Stores the best fit (means, medians) information from the comparison.
 Created using python ysg_temp_estimation.py --stars 848 --cores 8 (or however many cores you want to use)
