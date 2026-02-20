@@ -38,13 +38,15 @@ def load_data():
     logger = logging.getLogger('ysg_fitting')
     logger.info("Loading data files...")
     # Load coordinates, SMC and LMC candidate data
-    coords = pd.read_csv('../merged_smc_lmc_coords.csv', sep=r'\s+', comment='#', names=['ra', 'dec'])
-    df_lmc = pd.read_csv('../annas_candidates/final_lmc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
-    df_smc = pd.read_csv('../annas_candidates/final_smc_ysgcands_allphot.csv', comment='#') # , sep="\\s+"
-    choose_phot = pd.read_csv('choose_photometry_v2.csv')
+    coords = pd.read_csv('../merged_smc_lmc_coords_all.csv', sep=r'\s+', comment='#', names=['ra', 'dec'])
+    df_lmc = pd.read_csv('../ysg_candidates/final_lmc_ysgcands_allphot_simbad.csv', comment='#') # , sep="\\s+"
+    df_lmc_prefinal = pd.read_csv('../ysg_candidates/prefinal_lmc_ysgcands_allphot_simbad.csv', comment='#') # , sep="\\s+"
+    df_smc = pd.read_csv('../ysg_candidates/final_smc_ysgcands_allphot_simbad.csv', comment='#') # , sep="\\s+"
+    df_smc_prefinal = pd.read_csv('../ysg_candidates/prefinal_smc_ysgcands_allphot_simbad.csv', comment='#') # , sep="\\s+"
+    choose_phot = pd.read_csv('choose_photometry_v3.csv', comment='#')
     # Load synthetic photometry models
     computed_models = pd.read_csv('synth_phot_all_models_allphot_gordon.csv')
-    return coords, df_smc, df_lmc, choose_phot, computed_models
+    return coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, choose_phot, computed_models
 
 
 # def rchi2_with_err(star_mags,star_err,model_mags):
@@ -62,7 +64,7 @@ def load_data():
 #     rchi2 = np.sum(z**2)/(N-1)
 #     return rchi2
 
-def observed_sed_allphot(index, coords, df_smc, df_lmc, choose_phot, flux=True, show=False):
+def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, choose_phot, flux=True, show=False):
     """ 
     Plots the SED for a given index in the coords dataframe
     Modified for multiprocessing - takes dataframes as parameters
@@ -72,10 +74,20 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, choose_phot, flux=True, 
     
     if index < 377:
         row = df_smc[(df_smc['ra'] == RA) & (df_smc['dec'] == dec)]
-    else:
+    elif index >= 377 and index < 848:
         row = df_lmc[(df_lmc['ra'] == RA) & (df_lmc['dec'] == dec)] 
+    elif index >= 848 and index < 1012:
+        row = df_smc_prefinal[(df_smc_prefinal['ra'] == RA) & (df_smc_prefinal['dec'] == dec)] 
+    elif index >= 1012:
+        row = df_lmc_prefinal[(df_lmc_prefinal['ra'] == RA) & (df_lmc_prefinal['dec'] == dec)]
+    else:
+        raise ValueError(f"Index {index} out of expected range")
     
-    # Bands and their Vega zero points in erg/s/cm^2/Angstrom
+    # Check if we found a match
+    if len(row) == 0:
+        raise ValueError(f"No matching star found for index {index} (RA={RA}, Dec={dec})")
+    
+    df = row.iloc[0]
     band_zeropoints = {
     # Near-infrared (2MASS)
     'Jmag_2MASS':3.0596e-10,    # J-band 3.0596e-10 # formerly was 1.11933e-9 
@@ -125,7 +137,6 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, choose_phot, flux=True, 
         'imag_APASS':7457.89
     }
     
-    df = row.iloc[0]
     wavelengths = []
     fluxes = []
     flux_errors = []
@@ -185,7 +196,7 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, choose_phot, flux=True, 
 
     return wavelengths, fluxes, flux_errors, mags, mag_errors, band_names
 
-def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_models, coords, df_smc, df_lmc, iterations=1000):
+def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_models, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, iterations=1000):
     """
     Process a chunk of stars using vectorized calculations.
     This function runs in a separate process.
@@ -194,7 +205,8 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
     
     logger = logging.getLogger(f'worker_{star_indices_chunk[0]}')
     logger.info(f"Worker started: processing stars {star_indices_chunk[0]}-{star_indices_chunk[-1]}")
-    min_max_avs = pd.read_csv('ysg_candidate_extinctions.csv')
+    # min_max_avs = pd.read_csv('ysg_candidate_extinctions.csv')
+    min_max_avs = pd.read_csv('ysg_extinctions_all.csv')
 
     standard_band_order = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Umag_MCPS', 'Bmag_APASS', 'Bmag_MCPS', 'gmag_APASS', 'Vmag_MCPS', 'Vmag_APASS', 'rmag_APASS', 'imag_APASS', 'uvm2mag_SWIFT', 'uvw1mag_SWIFT', 'uvw2mag_SWIFT']
     V_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS']
@@ -215,7 +227,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
         output_filename = f'temp_fitting/{RA}_{dec}.csv'
 
         try:
-            obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, choose_phot, show=False)
+            obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, choose_phot, show=False)
             obs_wavelengths, obs_fluxes, obs_flux_errors, obs_mags, obs_mag_errors, obs_band_names = obs
 
             choose_phot_options = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS']
@@ -259,11 +271,10 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
             matched_obs_errors = np.array([obs_errors_dict[band] for band in common_bands])
             
             # Filter models by metallicity
-            if star_idx < 377:
+            if star_idx < 377 or (star_idx >= 848 and star_idx < 1012):
                 models_to_test = computed_models[computed_models['metallicity'] == -0.75]
             else:
                 models_to_test = computed_models[computed_models['metallicity'] == -0.25]
-
 
             # VECTORIZED CALCULATIONS
             
@@ -1107,13 +1118,15 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_phot, computed_mode
 
 
         except Exception as e:
+            import traceback
             logger.error(f"Error processing star {star_idx}: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             continue
     
     logger.info(f"Worker completed: processed {len(star_indices_chunk)} stars")
     return chunk_results, chunk_summaries
 
-def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, choose_phot, computed_models, n_cores=4, iterations=1000):
+def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, choose_phot, computed_models, n_cores=4, iterations=1000):
     """
     Parallel version using multiprocessing.
     """
@@ -1135,11 +1148,13 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, choose_pho
         # Create partial function with fixed parameters
         process_func = functools.partial(
             process_star_chunk_vectorized,
-            computed_models=computed_models,
             choose_phot=choose_phot,
+            computed_models=computed_models,
             coords=coords,
             df_smc=df_smc,
             df_lmc=df_lmc,
+            df_smc_prefinal=df_smc_prefinal,
+            df_lmc_prefinal=df_lmc_prefinal,
             iterations=iterations
         )
         # Map the function to star chunks
@@ -1155,7 +1170,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, choose_pho
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_v8.csv'
+        summary_filename = f'ysg_temp_fitting_summary_v8_prefinal.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()
@@ -1180,7 +1195,7 @@ def main():
     
     try:
         # Load data
-        coords, df_smc, df_lmc, choose_phot, computed_models = load_data()
+        coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, choose_phot, computed_models = load_data()
         
         # Run the parallel processing
         start_time = datetime.now()
@@ -1189,6 +1204,8 @@ def main():
             coords=coords,
             df_smc=df_smc,
             df_lmc=df_lmc,
+            df_smc_prefinal=df_smc_prefinal,
+            df_lmc_prefinal=df_lmc_prefinal,
             choose_phot=choose_phot,
             computed_models=computed_models,
             n_cores=args.cores,
