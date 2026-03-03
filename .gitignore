@@ -15,6 +15,7 @@ synth_phot_temp_estimation/synth_phot_sed_fit_ex/
 extras/
 offsets_examples/
 old_summary_results/
+archived_temp_results/
 
 
 # folders containing data that is important but too big to store
@@ -38,6 +39,7 @@ summary_results16.csv
 summary_results17.csv
 synphot1.tar.gz
 ysg_temp_fitting_summary.csv
+
 synth_phot_sed_fit_ex.zip
 ysg_with_pysynphot.yaml
 gaia_names
@@ -45,9 +47,12 @@ eRASS1_HMXB_LMC_v1.0.fits
 synth_phot_all_models_trial.csv
 merged_smc_lmc_coords_with_index.csv
 ra_dec_angDist.csv
-ysg_temp_fitting_results.csv
+ysg_temp_fitting_results_v1.csv
+synth_phot_temp_estimation/ysg_temp_fitting_summary_v2.csv
 661446200650-light-curves.csv
-synth_phot_temp_estimation/check_temp_fitting_bad_phot.ipynb
-synth_phot_temp_estimation/check_temp_fitting_B_worse.ipynb
-synth_phot_temp_estimation/check_temp_fitting_keep_BV.ipynb
+check_temp_fitting_keep_BV.ipynb
 synth_phot_temp_estimation/check_temp_fitting_keep_U.ipynb
+synth_phot_temp_estimation/check_temp_fitting.ipynb
+synth_phot_temp_estimation/check_temp_fitting_blue_excess.ipynb
+synth_phot_temp_estimation/check_temp_fitting_flags.ipynb
+# synth_phot_temp_estimation/check_temp_fitting_newstars.ipynb
