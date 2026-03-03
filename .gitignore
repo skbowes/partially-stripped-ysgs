@@ -47,4 +47,7 @@ merged_smc_lmc_coords_with_index.csv
 ra_dec_angDist.csv
 ysg_temp_fitting_results.csv
 661446200650-light-curves.csv
-
+synth_phot_temp_estimation/check_temp_fitting_bad_phot.ipynb
+synth_phot_temp_estimation/check_temp_fitting_B_worse.ipynb
+synth_phot_temp_estimation/check_temp_fitting_keep_BV.ipynb
+synth_phot_temp_estimation/check_temp_fitting_keep_U.ipynb
