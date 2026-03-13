@@ -48,16 +48,28 @@ def load_data():
     smc_opt_binaries = pd.read_csv('../ysg_candidates/original_files_from_anna/smc_opt_bin.csv', comment='#') 
     lmc_vis_binaries = pd.read_csv('../ysg_candidates/original_files_from_anna/lmc_vis_bin.csv', comment='#')
     lmc_opt_binaries = pd.read_csv('../ysg_candidates/original_files_from_anna/lmc_opt_bin.csv', comment='#')
-    # gaia synthetic photometry
-    gaia_bprp = pd.read_csv('gaia_bprp_synthphot.csv', sep=';', comment='#')
     choose_surveys = pd.read_csv('choose_surveys_v3.csv', comment='#')
     # Load synthetic photometry models
     computed_models = pd.read_csv('synth_phot_all_models_allphot_gordon.csv')
-    return coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal,  smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, computed_models
+    return coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal,  smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, choose_surveys, computed_models
 
 
+# def rchi2_with_err(star_mags,star_err,model_mags):
+#     '''
+#     Returns the reduced chi^2, accounting for errors
+#     Parameters:
+#         star_mags: Observed magnitudes
+#         star_err: Uncertainty on the observed magnitudes
+#         model_mags: Model magnitudes
+#     Returns:
+#         rchi2: Reduced chi^2 value
+#     '''
+#     N = len(star_mags)
+#     z = (star_mags-model_mags)/star_err
+#     rchi2 = np.sum(z**2)/(N-1)
+#     return rchi2
 
-def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, flux=True, show=False):
+def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, choose_surveys, flux=True, show=False):
     """ 
     Plots the SED for a given index in the coords dataframe
     Modified for multiprocessing - takes dataframes as parameters
@@ -110,19 +122,6 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
     'uvm2mag_SWIFT':4.66117e-9   # UVM2
     }
 
-    band_zeropoints_gaia = {    # Optical (Gaia synthetic photometry) in VEGA
-    'FU':3.49719e-9,    # U-band
-    'FB':6.72553e-9,    # B-band
-    'FV':3.5833e-9,    # V-band
-    'FI':9.23651e-10,    # I-band
-    'Fg':5.45476e-9,    # g-band
-    'Fr':2.49767e-9	
-    }
-
-    band_AB_zeropoints_gaia = {    # AB zero points for Gaia bands
-    'Fr':2.85425e-9,    # r-band
-    'Fg':4.92255e-9,    # g-band
-    }
 
     #####  lowercase bands are AB, uppercase are Vega, so be careful with the zeropoints! we will convert the ab mags (g, r, i) from
     ##### APASS to be in VEGA since the rest of the bands are. we would also have to do this for smash. #####
@@ -147,13 +146,7 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
         'Vmag_APASS': 5467.57,
         'gmag_APASS': 4671.78,
         'rmag_APASS': 6141.12,
-        'imag_APASS':7457.89,
-        'FU': 3551.05,        # U gaia
-        'FB': 4369.53,        # B gaia
-        'FV': 5467.57,        # V gaia
-        'FI': 8568.89,        # I gaia
-        'Fr': 6141.12,        # r gaia
-        'Fg': 4671.78         # g gaia
+        'imag_APASS':7457.89
     }
     
     wavelengths = []
@@ -162,11 +155,9 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
     mags = []
     mag_errors = []
     band_names = []
-    true_phot_band_counter = 0
+    
     for band in band_zeropoints.keys():
         if band in df.index and not pd.isna(df[band]):
-            if band not in ['uvw2mag_SWIFT', 'uvm2mag_SWIFT', 'uvw1mag_SWIFT']:
-                true_phot_band_counter += 1
             mag = df[band] # grab the magnitude, but for APASS we will convert to flux and back to mag to ensure consistency with zeropoints and error handling
             error_col = f'e_{band}'
             if error_col in df.index:
@@ -183,7 +174,6 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
             if mag_err > 0.36:
                 # drop the data point if error is too large
                 band = np.nan
-                true_phot_band_counter -= 1
                 continue
 
             # Convert magnitude to flux density
@@ -205,44 +195,6 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
             mags.append(mag)
             mag_errors.append(mag_err)
             band_names.append(band)
-
-    for band in band_zeropoints_gaia.keys():
-        if band in gaia_bprp.index and not pd.isna(gaia_bprp[band]):
-            flux_w_m2_nm = gaia_bprp[band] # grab the flux in W/m^2/nm from the Gaia synthetic photometry
-            error_col = f'e_{band}'
-            flux_err_W_m2_nm = gaia_bprp[error_col] if error_col in gaia_bprp.index else None
-
-            flux_ergs = flux_w_m2_nm # CONVERSION HERE 1e-7 * 1e9 # convert to erg/s/cm^2/Angstrom
-            flux_err_ergs = flux_err_W_m2_nm # CONVERSION HERE * 1e-7 * 1e9 if flux_err_W_m2_nm is not None else None
-
-            mag = -2.5 * np.log10(flux_ergs / band_zeropoints_gaia[band])
-            mag_err = (2.5/np.log(10)) * (flux_err_ergs/flux_ergs) if flux_err_ergs is not None else None # remember np.log is natural log
-            if mag_err is None or pd.isna(mag_err) or mag_err <= 0:
-                mag_err = 0.1  # Default error
-
-            if mag_err < 0.03:
-                mag_err = 0.03  # Set minimum error to 0.03 mag
-
-            if mag_err > 0.36:
-                # drop the data point if error is too large
-                band = np.nan
-                continue
-
-            # # Get magnitude and error by converting back from flux, to ensure consistency
-            # if band in band_AB_zeropoints_gaia:
-            #     # For AB magnitudes, use the AB zero point
-            #     mag = -2.5 * np.log10(flux_ergs / band_AB_zeropoints[band])
-            #     if error_col in gaia_bprp.index:
-            #         mag_err = (2.5 / np.log(10)) * (flux_err_ergs / flux_ergs)  # Convert flux error to magnitude error
-            # else:
-            #     mag = gaia_bprp[band]
-            
-            wavelengths.append(band_wavelengths[band])
-            fluxes.append(flux_ergs)
-            flux_errors.append(flux_err_ergs)
-            mags.append(mag)
-            mag_errors.append(mag_err)
-            band_names.append(band)
     
     # Sort by longest to shortest wavelength
     sorted_indices = np.argsort(wavelengths)[::-1]
@@ -254,9 +206,9 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
     # didnt have this line before:
     band_names = np.array(band_names)[sorted_indices]
 
-    return wavelengths, fluxes, flux_errors, mags, mag_errors, band_names, true_phot_band_counter, binary
+    return wavelengths, fluxes, flux_errors, mags, mag_errors, band_names, binary
 
-def determine_use_flags_from_swift(obs_band_names, obs_mags, summary, computed_models, star_idx, coords, true_phot_band_counter, binary, common_bands):
+def determine_use_flags_from_swift(obs_band_names, obs_mags, summary, computed_models, star_idx, coords, binary, common_bands):
     """
     Determine use_U, use_B, use_V flags based on SWIFT band residuals.
     
@@ -291,7 +243,7 @@ def determine_use_flags_from_swift(obs_band_names, obs_mags, summary, computed_m
     obs_band_names_list = list(obs_band_names)
     obs_swift_bands = [band for band in swift_bands if band in obs_band_names_list]
       
-    # Check for insufficient photometry FIRST, before checking if fits succeeded
+    # CRITICAL: Check for insufficient photometry FIRST, before checking if fits succeeded
     if len(common_bands) <= 3:
         return {'use_U': np.nan, 'use_B': np.nan, 'use_V': np.nan,
                 'final_teff_median': np.nan, 'final_logg_median': np.nan, 'final_av_median': np.nan,
@@ -502,7 +454,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
 
         try:
             obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, choose_surveys, show=False)
-            obs_wavelengths, obs_fluxes, obs_flux_errors, obs_mags, obs_mag_errors, obs_band_names, true_phot_band_counter, binary = obs
+            obs_wavelengths, obs_fluxes, obs_flux_errors, obs_mags, obs_mag_errors, obs_band_names, binary = obs
 
             choose_surveys_options = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS']
             # this code works properly due to lines in determine_use_flags_from_swift but there may be stars that have an APASS or MCPS flag that do not actuallyt have that data
@@ -527,8 +479,6 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                     choose_surveys_options.append('Bmag_MCPS')
                 if choose_surveys_row['choose_MCPS'] == 0 and 'Vmag_APASS' not in obs_band_names: 
                     choose_surveys_options.append('Vmag_MCPS')
-            if true_phot_band_counter <= 3:
-                choose_surveys_options.extend(['FU', 'FB', 'FV', 'FI', 'Fr', 'Fg'])  # add Gaia synthetic photometry if we have very limited observed photometry
 
             # Create dictionaries for observed data
             obs_mags_dict = dict(zip(obs_band_names, obs_mags))
@@ -1408,7 +1358,6 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                 star_idx=star_idx,
                 coords=coords,
                 binary=binary,
-                true_phot_band_counter=true_phot_band_counter,
                 common_bands=common_bands
             )
             
@@ -1429,7 +1378,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
     logger.info(f"Worker completed: processed {len(star_indices_chunk)} stars")
     return chunk_results, chunk_summaries
 
-def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, computed_models, n_cores=4, iterations=1000):
+def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, choose_surveys, computed_models, n_cores=4, iterations=1000):
     """
     Parallel version using multiprocessing.
     """
@@ -1462,7 +1411,6 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_pre
             smc_opt_binaries=smc_opt_binaries,
             lmc_vis_binaries=lmc_vis_binaries,
             lmc_opt_binaries=lmc_opt_binaries,
-            gaia_bprp=gaia_bprp,
             iterations=iterations
         )
         # Map the function to star chunks
@@ -1478,7 +1426,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_pre
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_03122026.csv'
+        summary_filename = f'ysg_temp_fitting_summary_03092026.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()
@@ -1503,7 +1451,7 @@ def main():
     
     try:
         # Load data
-        coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, computed_models = load_data()
+        coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, choose_surveys, computed_models = load_data()
         
         # Run the parallel processing
         start_time = datetime.now()
@@ -1518,7 +1466,6 @@ def main():
             smc_opt_binaries=smc_opt_binaries,
             lmc_vis_binaries=lmc_vis_binaries,
             lmc_opt_binaries=lmc_opt_binaries,
-            gaia_bprp=gaia_bprp,
             choose_surveys=choose_surveys,
             computed_models=computed_models,
             n_cores=args.cores,
