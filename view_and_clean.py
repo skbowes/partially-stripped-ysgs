@@ -10,7 +10,7 @@ from pathlib import Path
 _MODULE_DIR = Path(__file__).parent
 
 offsets_df = pd.read_csv(_MODULE_DIR / 'offsets.csv')
-coords = pd.read_csv(_MODULE_DIR / 'merged_smc_lmc_coords.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
+coords = pd.read_csv(_MODULE_DIR / 'merged_smc_lmc_coords_all.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
 
 
 def get_telescope(image_str):
@@ -180,37 +180,49 @@ def df_extract(index, g = True, seeoutliers=False, report=False):
     # RA = coords[index]['RA']
     # dec = coords[index]['DEC']
 
-    # new, works for directory sub2025, where new (2025) lcs are stored
-    RA_hms = deg_to_hms_filenames(RA)
-    dec_dms = deg_to_dms_filenames(dec)
-    RA_hms1 = RA_hms[0]
-    dec_dms1 = dec_dms[0]
-    if g == True:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
-        if not os.path.isfile(file_path):
-            RA_hms2 = RA_hms[1]
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
+    if index < 848:
+        # new, works for directory sub2025, where new (2025) lcs are stored
+        RA_hms = deg_to_hms_filenames(RA)
+        dec_dms = deg_to_dms_filenames(dec)
+        RA_hms1 = RA_hms[0]
+        dec_dms1 = dec_dms[0]
+        if g == True:
+            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_g.dat')
             if not os.path.isfile(file_path):
-                dec_dms2 = dec_dms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
+                RA_hms2 = RA_hms[1]
+                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_g.dat')
                 if not os.path.isfile(file_path):
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
+                    dec_dms2 = dec_dms[1]
+                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_g.dat')
                     if not os.path.isfile(file_path):
-                        print(f"File not found for target {index}")
-                        print(RA, dec)
-    if g == False:
-        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
-        if not os.path.isfile(file_path):
-            RA_hms2 = RA_hms[1]
-            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
+                        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_g.dat')
+                        if not os.path.isfile(file_path):
+                            print(f"File not found for target {index}")
+                            print(RA, dec)
+        if g == False:
+            file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms1}_V.dat')
             if not os.path.isfile(file_path):
-                dec_dms2 = dec_dms[1]
-                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
+                RA_hms2 = RA_hms[1]
+                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms1}_V.dat')
                 if not os.path.isfile(file_path):
-                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
+                    dec_dms2 = dec_dms[1]
+                    file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms1}{dec_dms2}_V.dat')
                     if not os.path.isfile(file_path):
-                        print(f"File not found for target {index}")
-                        print(RA, dec)
+                        file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2025', f'{RA_hms2}{dec_dms2}_V.dat')
+                        if not os.path.isfile(file_path):
+                            print(f"File not found for target {index}")
+                            print(RA, dec)
+    else:
+        if g == True:
+            if RA < 10:
+                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2026', f'J{RA}{dec}_g.dat') # might need a zero here if using sub2 (2022 data)
+            if RA >= 10:
+                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2026', f'J{RA}{dec}_g.dat')
+        if g == False:
+            if RA < 10:
+                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2026', f'J{RA}{dec}_V.dat') # might need a zero here if using sub2 (2022 data)
+            if RA >= 10:
+                file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2026', f'J{RA}{dec}_V.dat')
 
     # Read the data
     header_line = find_header_line(file_path)
@@ -826,12 +838,6 @@ def offset_corrector_window(index, g=True, additive=False, mag_space=False, show
     if not offset_teles:
         return None
     
-    baseline_telescope = None
-    for tele in df_window['telescope_from_image'].unique():
-        if tele not in discard_teles and tele is not None:
-            baseline_telescope = tele
-            break
-    # print(f"Baseline telescope: {baseline_telescope}")
     try:
         offsets_df_row = offsets_df[(offsets_df['ra'] == ra) & (offsets_df['dec'] == dec)].iloc[0]
         time_start = offsets_df_row['time_start']
@@ -839,14 +845,15 @@ def offset_corrector_window(index, g=True, additive=False, mag_space=False, show
         
         # Check if time_start or time_end are NaN/None and use fallback values
         if pd.isna(time_start) or pd.isna(time_end) or time_start is None or time_end is None:
-            if index < 377:
+            if index < 377 or (index >= 848 and index < 1012):
                 time_start = 2459325.0
                 time_end = 2459650.0
             else:
                 time_start = 2459400.0
                 time_end = 2459725.0
+            
     except:
-        if index < 377:
+        if index < 377 or (index >= 848 and index < 1012):
             time_start = 2459325.0
             time_end = 2459650.0
         else:
@@ -854,6 +861,14 @@ def offset_corrector_window(index, g=True, additive=False, mag_space=False, show
             time_end = 2459725.0
 
     df_window = df_window[(df_window['HJD'] >= time_start) & (df_window['HJD'] <= time_end)]
+    
+    # Select baseline telescope AFTER filtering to time window (must have data in window)
+    baseline_telescope = None
+    for tele in df_window['telescope_from_image'].unique():
+        if tele not in discard_teles and tele is not None:
+            baseline_telescope = tele
+            break
+    # print(f"Baseline telescope: {baseline_telescope}")
 
     if show:
         fig, ax1 = plt.subplots(figsize=(18, 6))
@@ -890,6 +905,7 @@ def offset_corrector_window(index, g=True, additive=False, mag_space=False, show
         if mag_space == False:
             telescope_flux = df_telescope['flux_(mJy)'].values
             baseline_flux = df_baseline['flux_(mJy)'].values
+            #### this is where the warning 'mean of an empty slice' is coming from, which means that either the telescope or the baseline telescope has no data in the window. We should check for this and skip if it is the case.
             df_telescope_mean = np.mean(telescope_flux)
             df_baseline_mean = np.mean(baseline_flux)
         if mag_space == True:
@@ -979,14 +995,17 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
         for i, t in enumerate(teles):
             mask = df['telescope_from_image'] == t
             if mag_space == False:
-                mean = np.mean(df[mask]['flux_(mJy)'])
+                data = df[mask]['flux_(mJy)']
+                mean = np.mean(data) if len(data) > 0 else np.nan
                 ax1.errorbar(df[mask]['HJD'], df[mask]['flux_(mJy)'], yerr=df[mask]['flux_err'],
                             color=colors[i % len(colors)], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {t}')
             if mag_space == True:
-                mean = np.mean(df[mask]['mag'])
+                data = df[mask]['mag']
+                mean = np.mean(data) if len(data) > 0 else np.nan
                 ax1.errorbar(df[mask]['HJD'], df[mask]['mag'], yerr=df[mask]['mag_err'],
                             color=colors[i % len(colors)], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {t}')
-            ax1.axhline(y=mean, color=colors[i % len(colors)], linestyle='--', label=f'Mean {t}')
+            if not np.isnan(mean):
+                ax1.axhline(y=mean, color=colors[i % len(colors)], linestyle='--', label=f'Mean {t}')
         # this is to show the window that the offsets will be calculated in!
         if offsets is not None:
             # DEPENDENT ON THE LENGTH OF SMC/LMC
@@ -1004,15 +1023,21 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
             plt.gca().invert_yaxis()
         ax1.legend(loc='upper left')
         ax1.grid(True)
-        plt.title(f'{ra} {dec} Uncorrected lightcurve')
+        plt.title(f'{ra} {dec}; {index} Uncorrected lightcurve')
         plt.show()
         plt.close(fig)
 
     # Calculate offsets again just so we can show plots in the right order
     offsets = offset_corrector_window(index, g=g, additive=additive, mag_space=mag_space, show=show_window)
+    # Track telescopes with NaN offsets (no data in offset window, can't be aligned)
+    nan_offset_teles = []
     # correct offsets
     if offsets: # was previously 'if offsets is not None and offsets:'
         for telescope, offset in offsets.items():
+            # Skip NaN or inf offsets (means telescope has no data in the offset window)
+            if not np.isfinite(offset):
+                nan_offset_teles.append(telescope)
+                continue
             # use the offsets to correct the data for all times:
             if additive:
                 if mag_space == False:
@@ -1025,27 +1050,43 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
                 if mag_space == True:
                     df.loc[df['telescope_from_image'] == telescope, 'mag'] *= offset
 
-    ##### SHOULD WORK REGARDLESS OF FLUX OR MAG SPACE! SINCE DROPPING THE WHOLE ROW> LEAVING IN FLUX SPACE FOR NOW
-    # discard telescopes (non-constant offsets)
-    discard_teles = telescope_separator(index, 'discard_telescopes')
-    for discard_tele in discard_teles:
-        df.loc[df['telescope_from_image'] == discard_tele, 'flux_(mJy)'] = np.nan
-
-    # discard lightcurve (poor-quality data in all telescopes)
-    try:
-        if offsets_df['discard_lc'][(offsets_df['ra'] == ra) & (offsets_df['dec'] == dec)].iloc[0] == 1:
-            df['flux_(mJy)'] = np.nan
-    except:
-        pass
-
+    # Convert between flux and mag space BEFORE discarding
     if mag_space == True:
         df['flux_(mJy)'] = df['zeropoints'] * (10**(-0.4 * df['mag']))
     if mag_space == False:
         df['mag'] = -2.5 * np.log10(df['flux_(mJy)'] / df['zeropoints'])
 
-    # REMOVE OUTLIERS
-    df = modified_zscore(df, df['flux_(mJy)'], report=False)[0]
-    # DROP NaNs
+    # discard telescopes (non-constant offsets) - set BOTH flux and mag to NaN
+    discard_teles = telescope_separator(index, 'discard_telescopes')
+    # Also discard telescopes that had NaN offsets (no data in offset window)
+    # for nan_tele in nan_offset_teles:
+    #     if nan_tele not in discard_teles:
+    #         discard_teles.append(nan_tele)
+    for discard_tele in discard_teles:
+        df.loc[df['telescope_from_image'] == discard_tele, 'flux_(mJy)'] = np.nan
+        df.loc[df['telescope_from_image'] == discard_tele, 'mag'] = np.nan
+        df.loc[df['telescope_from_image'] == discard_tele, 'mag_err'] = np.nan
+        df.loc[df['telescope_from_image'] == discard_tele, 'flux_err'] = np.nan
+
+    # discard lightcurve (poor-quality data in all telescopes)
+    try:
+        discard_lc_value = offsets_df['discard_lc'][(offsets_df['ra'] == ra) & (offsets_df['dec'] == dec)].iloc[0]
+        # Handle both numeric and string values
+        if discard_lc_value == 1 or discard_lc_value == 1.0 or discard_lc_value == "1.0" or discard_lc_value == "1":
+            df['flux_(mJy)'] = np.nan
+            df['mag'] = np.nan
+            df['mag_err'] = np.nan
+            df['flux_err'] = np.nan
+    except:
+        pass
+
+    # DROP discarded data BEFORE outlier detection (modified_zscore needs clean data)
+    df = df.dropna(axis=0, how='any')
+    df = df.reset_index(drop=True)
+    
+    # REMOVE OUTLIERS (only on remaining valid data)
+    df = modified_zscore(df, df['flux_(mJy)'], sigma = 3,report=False)[0]
+    # DROP outliers
     df = df.dropna(axis=0, how='any')
     df = df.reset_index(drop=True)
     telescopes = df['telescope_from_image'].unique()
@@ -1058,14 +1099,17 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
         for h, te in enumerate(teles):
             mask = df['telescope_from_image'] == te
             if mag_space == False:
-                mean = np.mean(df[mask]['flux_(mJy)'])
+                data = df[mask]['flux_(mJy)']
+                mean = np.mean(data) if len(data) > 0 else np.nan
                 ax1.errorbar(df[mask]['HJD'], df[mask]['flux_(mJy)'], yerr=df[mask]['flux_err'],
                             color=colors[h % len(colors)], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {te}')
             if mag_space == True:
-                mean = np.mean(df[mask]['mag'])
+                data = df[mask]['mag']
+                mean = np.mean(data) if len(data) > 0 else np.nan
                 ax1.errorbar(df[mask]['HJD'], df[mask]['mag'], yerr=df[mask]['mag_err'],
                             color=colors[h % len(colors)], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {te}')
-            ax1.axhline(y=mean, color=colors[h % len(colors)], linestyle='--', label=f'Mean {te}')
+            if not np.isnan(mean):
+                ax1.axhline(y=mean, color=colors[h % len(colors)], linestyle='--', label=f'Mean {te}')
 
         # mean_med = mean_med_flux(index, df=df, telescopes=telescopes, g=g)
         # only do if lightcurve is not discarded
@@ -1087,12 +1131,77 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
             plt.gca().invert_yaxis()
         ax1.legend(loc='upper left')
         ax1.grid(True)
-        plt.title(f'{ra} {dec} Corrected lightcurve')
+        plt.title(f'{ra} {dec}; {index} Corrected lightcurve')
         plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{ra}{dec}_lcg.png', bbox_inches='tight', dpi=300)
         plt.show()
         plt.close(fig)
 
     return df, telescopes
+
+
+def grid_plotter_offset_corrected(starting_index, g = True, additive=False, mag_space=False):
+    """
+    Plots a 5x5 grid of light curves starting from the given index, either in g-band or V-band, with offset corrections applied.
+    Args:
+        starting_index (int): The starting index of the object in the coordinates DataFrame.
+        g (bool): If True, plot g-band light curves; if False, plot V-band light curves.
+        additive (bool): If True, apply additive correction; if False, apply multiplicative correction.
+        mag_space (bool): If True, work in magnitude space; if False, work in flux space.
+    """
+    # Create a 5x5 grid of subplots
+    fig, axes = plt.subplots(5, 5, figsize=(20, 20))
+    if g == True:
+        fig.suptitle('g-band Light Curves for Multiple Objects', fontsize=16)
+    if g == False:
+        fig.suptitle('V-band Light Curves for Multiple Objects', fontsize=16)
+    axes_flat = axes.flatten()
+    # Colors for different telescopes
+    colors = ['g', 'b', 'r', 'c', 'm', 'y', 'k']
+
+    plotnumber = 0
+    for i in range(starting_index, starting_index + 25):
+        ax = axes_flat[plotnumber]
+
+        try:
+            # Get coordinates for this object
+            RA = coords['RA'][i]
+            dec = coords['DEC'][i]
+
+            df, telescopes = offset_corrector(i, g=g, additive=additive, mag_space=mag_space, show=False, show_window=False)
+
+            # Plot data for each telescope
+            for j, tel in enumerate(telescopes):
+                mask = df['telescope_from_image'] == tel
+                ax.errorbar(df[mask]['HJD'], df[mask]['mag'], yerr=df[mask]['mag_err'], fmt='.', color=colors[j % len(colors)],
+                        label=f'tel {tel}', capsize=1, markersize=2, elinewidth=0.3, capthick=0.3)
+                # ax.set_ylim(ax.get_ylim()[::-1])  # Keep y-axis inverted, but you can set specific limits like:
+                # ax.set_ylim(14.5, 13.0)  # Example: set y-axis from 16 (faint) to 12 (bright)
+            
+            ax.invert_yaxis()
+            ax.grid(True, alpha=0.3)
+            if RA < 10:
+                ax.set_title(f'{RA} {dec}; ' + str(i), fontsize=8)
+            if RA >= 10:
+                ax.set_title(f'{RA} {dec}; ' + str(i), fontsize=8)
+            if len(telescopes) > 1:
+                ax.legend(fontsize=8)
+            ax.tick_params(axis='both', labelsize=6)
+            
+        except Exception as e:
+            # If there's an error reading/plotting a file, show empty plot with error message
+            ax.text(0.5, 0.5, f'Error: {str(e)}', 
+                    ha='center', va='center', transform=ax.transAxes, 
+                    fontsize=6, color='red')
+            ax.set_title(f'J0{RA}{dec}'+ " Number " + str(i), fontsize=8)
+        plotnumber += 1
+    fig.text(0.5, 0.02, 'HJD', ha='center', fontsize=12)
+    fig.text(0.02, 0.5, 'Magnitude', va='center', rotation='vertical', fontsize=12)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.95) 
+    plt.show()
+    return
+
+
 
 
 

@@ -49,10 +49,10 @@ def load_data():
     lmc_vis_binaries = pd.read_csv('../ysg_candidates/original_files_from_anna/lmc_vis_bin.csv', comment='#')
     lmc_opt_binaries = pd.read_csv('../ysg_candidates/original_files_from_anna/lmc_opt_bin.csv', comment='#')
     # gaia synthetic photometry
-    gaia_bprp = pd.read_csv('gaia_bprp_synthphot.csv', sep=';', comment='#')
-    choose_surveys = pd.read_csv('choose_surveys_v3.csv', comment='#')
+    gaia_bprp = pd.read_csv('gaia_bprp_synthphot_allbands.csv', sep=';', comment='#')
+    choose_surveys = pd.read_csv('choose_surveys_v4.csv', comment='#')
     # Load synthetic photometry models
-    computed_models = pd.read_csv('synth_phot_all_models_allphot_gordon.csv')
+    computed_models = pd.read_csv('synth_phot_all_models_allphot_gordon_gaia.csv')
     return coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal,  smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, computed_models
 
 
@@ -82,12 +82,16 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
         row = df_lmc_prefinal[(df_lmc_prefinal['ra'] == RA) & (df_lmc_prefinal['dec'] == dec)]
     else:
         raise ValueError(f"Index {index} out of expected range")
+    gaia_row = gaia_bprp[(gaia_bprp['ra'] == RA) & (gaia_bprp['dec'] == dec)]
     
     # Check if we found a match
     if len(row) == 0:
         raise ValueError(f"No matching star found for index {index} (RA={RA}, Dec={dec})")
     
+    
     df = row.iloc[0]
+    gaia_df = gaia_row.iloc[0] if len(gaia_row) > 0 else None
+
     band_zeropoints = {
     # Near-infrared (2MASS)
     'Jmag_2MASS':3.0596e-10,    # J-band 3.0596e-10 # formerly was 1.11933e-9 
@@ -107,21 +111,16 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
     # UV (Swift UVOT)
     'uvw1mag_SWIFT':4.02204e-9,  # UVW
     'uvw2mag_SWIFT':5.37469e-9,   # UVW2
-    'uvm2mag_SWIFT':4.66117e-9   # UVM2
-    }
+    'uvm2mag_SWIFT':4.66117e-9,   # UVM2
 
-    band_zeropoints_gaia = {    # Optical (Gaia synthetic photometry) in VEGA
-    'FU':3.49719e-9,    # U-band
-    'FB':6.72553e-9,    # B-band
-    'FV':3.5833e-9,    # V-band
-    'FI':9.23651e-10,    # I-band
-    'Fg':5.45476e-9,    # g-band
-    'Fr':2.49767e-9	
-    }
-
-    band_AB_zeropoints_gaia = {    # AB zero points for Gaia bands
-    'Fr':2.85425e-9,    # r-band
-    'Fg':4.92255e-9,    # g-band
+  # Optical (Gaia synthetic photometry) in VEGA
+    'Umag_GAIA':3.49719e-9,    # U-band
+    'Bmag_GAIA':6.72553e-9,    # B-band
+    'Vmag_GAIA':3.5833e-9,    # V-band
+    'Imag_GAIA':9.23651e-10, #,    # I-band
+    'gmag_GAIA':5.45476e-9,    # g-band
+    'rmag_GAIA':2.49767e-9,
+    'imag_GAIA':1.38589e-9,  # i-band
     }
 
     #####  lowercase bands are AB, uppercase are Vega, so be careful with the zeropoints! we will convert the ab mags (g, r, i) from
@@ -148,12 +147,13 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
         'gmag_APASS': 4671.78,
         'rmag_APASS': 6141.12,
         'imag_APASS':7457.89,
-        'FU': 3551.05,        # U gaia
-        'FB': 4369.53,        # B gaia
-        'FV': 5467.57,        # V gaia
-        'FI': 8568.89,        # I gaia
-        'Fr': 6141.12,        # r gaia
-        'Fg': 4671.78         # g gaia
+        'Umag_GAIA': 3551.05,        # U gaia
+        'Bmag_GAIA': 4369.53,        # B gaia
+        'Vmag_GAIA': 5467.57,        # V gaia
+        'Imag_GAIA': 8568.89,        # I gaia
+        'rmag_GAIA': 6141.12,        # r gaia
+        'gmag_GAIA': 4671.78,         # g gaia
+        'imag_GAIA': 7457.89,        # i gaia
     }
     
     wavelengths = []
@@ -164,9 +164,9 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
     band_names = []
     true_phot_band_counter = 0
     for band in band_zeropoints.keys():
-        if band in df.index and not pd.isna(df[band]):
-            if band not in ['uvw2mag_SWIFT', 'uvm2mag_SWIFT', 'uvw1mag_SWIFT']:
-                true_phot_band_counter += 1
+        if band in df.index and not pd.isna(df[band]): #and band not in ['Umag_GAIA', 'Bmag_GAIA', 'Vmag_GAIA', 'Imag_GAIA', 'gmag_GAIA', 'rmag_GAIA']:
+            # if band not in ['uvw2mag_SWIFT', 'uvm2mag_SWIFT', 'uvw1mag_SWIFT']:
+            #     true_phot_band_counter += 1
             mag = df[band] # grab the magnitude, but for APASS we will convert to flux and back to mag to ensure consistency with zeropoints and error handling
             error_col = f'e_{band}'
             if error_col in df.index:
@@ -183,7 +183,7 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
             if mag_err > 0.36:
                 # drop the data point if error is too large
                 band = np.nan
-                true_phot_band_counter -= 1
+                # true_phot_band_counter -= 1
                 continue
 
             # Convert magnitude to flux density
@@ -206,43 +206,25 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
             mag_errors.append(mag_err)
             band_names.append(band)
 
-    for band in band_zeropoints_gaia.keys():
-        if band in gaia_bprp.index and not pd.isna(gaia_bprp[band]):
-            flux_w_m2_nm = gaia_bprp[band] # grab the flux in W/m^2/nm from the Gaia synthetic photometry
-            error_col = f'e_{band}'
-            flux_err_W_m2_nm = gaia_bprp[error_col] if error_col in gaia_bprp.index else None
-
-            flux_ergs = flux_w_m2_nm # CONVERSION HERE 1e-7 * 1e9 # convert to erg/s/cm^2/Angstrom
-            flux_err_ergs = flux_err_W_m2_nm # CONVERSION HERE * 1e-7 * 1e9 if flux_err_W_m2_nm is not None else None
-
-            mag = -2.5 * np.log10(flux_ergs / band_zeropoints_gaia[band])
-            mag_err = (2.5/np.log(10)) * (flux_err_ergs/flux_ergs) if flux_err_ergs is not None else None # remember np.log is natural log
-            if mag_err is None or pd.isna(mag_err) or mag_err <= 0:
-                mag_err = 0.1  # Default error
-
-            if mag_err < 0.03:
-                mag_err = 0.03  # Set minimum error to 0.03 mag
-
-            if mag_err > 0.36:
-                # drop the data point if error is too large
-                band = np.nan
-                continue
-
-            # # Get magnitude and error by converting back from flux, to ensure consistency
-            # if band in band_AB_zeropoints_gaia:
-            #     # For AB magnitudes, use the AB zero point
-            #     mag = -2.5 * np.log10(flux_ergs / band_AB_zeropoints[band])
-            #     if error_col in gaia_bprp.index:
-            #         mag_err = (2.5 / np.log(10)) * (flux_err_ergs / flux_ergs)  # Convert flux error to magnitude error
-            # else:
-            #     mag = gaia_bprp[band]
-            
-            wavelengths.append(band_wavelengths[band])
-            fluxes.append(flux_ergs)
-            flux_errors.append(flux_err_ergs)
-            mags.append(mag)
-            mag_errors.append(mag_err)
-            band_names.append(band)
+        elif band in ['Umag_GAIA', 'Bmag_GAIA', 'Vmag_GAIA', 'Imag_GAIA', 'gmag_GAIA', 'rmag_GAIA', 'imag_GAIA']:
+            if gaia_df is not None and band in gaia_df.index and not pd.isna(gaia_df[band]):
+                mag = gaia_df[band]
+                error_col = f'e_{band}'
+                mag_err = gaia_df[error_col] if error_col in gaia_df.index and not pd.isna(gaia_df[error_col]) else None
+                if mag_err is None or pd.isna(mag_err) or mag_err <= 0:
+                    mag_err = 0.1
+                if mag_err < 0.03:
+                    mag_err = 0.03
+                if mag_err > 0.36:
+                    continue
+                flux_ergs = band_zeropoints[band] * 10**(-0.4 * mag)
+                flux_err_ergs = flux_ergs * 0.921 * mag_err
+                wavelengths.append(band_wavelengths[band])
+                fluxes.append(flux_ergs)
+                flux_errors.append(flux_err_ergs)
+                mags.append(mag)
+                mag_errors.append(mag_err)
+                band_names.append(band)
     
     # Sort by longest to shortest wavelength
     sorted_indices = np.argsort(wavelengths)[::-1]
@@ -313,7 +295,21 @@ def determine_use_flags_from_swift(obs_band_names, obs_mags, summary, computed_m
     
     # If we don't have all three median fits, default to use_B
     if not (has_U_median and has_B_median and has_V_median):
-        return {'use_U': False, 'use_B': True, 'use_V': False}
+        return {
+            'use_U': False, 'use_B': True, 'use_V': False,
+            'final_teff_median': summary.get('teff_median_B_redder', np.nan),
+            'final_logg_median': summary.get('logg_median_B_redder', np.nan),
+            'final_av_median': summary.get('av_median_B_redder', np.nan),
+            'final_chi2': summary.get('chi2_B_redder', np.nan),
+            'final_teff_mean': summary.get('teff_mean_B_redder', np.nan),
+            'final_teff_std': summary.get('teff_std_B_redder', np.nan),
+            'final_logT_mean': np.log10(summary['teff_mean_B_redder']) if summary.get('teff_mean_B_redder') else np.nan,
+            'final_logT_std': summary['teff_std_B_redder'] / (summary['teff_mean_B_redder'] * np.log(10)) if summary.get('teff_mean_B_redder') else np.nan,
+            'final_logg_mean': summary.get('logg_mean_B_redder', np.nan),
+            'final_av_mean': summary.get('av_mean_B_redder', np.nan),
+            'final_logL_mean': summary.get('logL_mean_B_redder', np.nan),
+            'final_logL_std': summary.get('logL_std_B_redder', np.nan),
+        }
     
     # Get median parameters for each fitting type
     median_U = {
@@ -470,7 +466,7 @@ def determine_use_flags_from_swift(obs_band_names, obs_mags, summary, computed_m
                         'final_logL_std': summary['logL_std_V_redder']
                         }
 
-def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_models, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, iterations=1000):
+def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_models, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, iterations=1000):
     """
     Process a chunk of stars using vectorized calculations.
     This function runs in a separate process.
@@ -483,9 +479,9 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
     min_max_avs = pd.read_csv('ysg_extinctions_all.csv')
 
     standard_band_order = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Umag_MCPS', 'Bmag_APASS', 'Bmag_MCPS', 'gmag_APASS', 'Vmag_MCPS', 'Vmag_APASS', 'rmag_APASS', 'imag_APASS', 'uvm2mag_SWIFT', 'uvw1mag_SWIFT', 'uvw2mag_SWIFT']
-    V_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS']
-    B_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS', 'Bmag_APASS', 'Bmag_MCPS']
-    U_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS', 'Bmag_APASS', 'Bmag_MCPS', 'Umag_MCPS']
+    V_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS',"rmag_GAIA", 'Vmag_GAIA', "Imag_GAIA", "imag_GAIA",]
+    B_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS', 'Bmag_APASS', 'Bmag_MCPS',"rmag_GAIA", "Imag_GAIA", "imag_GAIA", 'Vmag_GAIA', 'gmag_GAIA', 'Bmag_GAIA']
+    U_redder_bands = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Imag_MCPS', 'Vmag_MCPS', 'Vmag_APASS', 'Bmag_APASS', 'Bmag_MCPS', 'Umag_MCPS',"rmag_GAIA", "Imag_GAIA", "imag_GAIA", 'Vmag_GAIA',  'gmag_GAIA', 'Bmag_GAIA', 'Umag_GAIA']
     
     chunk_results = []
     chunk_summaries = []
@@ -501,7 +497,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
         output_filename = f'temp_fitting/{RA}_{dec}.csv'
 
         try:
-            obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, choose_surveys, show=False)
+            obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, show=False)
             obs_wavelengths, obs_fluxes, obs_flux_errors, obs_mags, obs_mag_errors, obs_band_names, true_phot_band_counter, binary = obs
 
             choose_surveys_options = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS']
@@ -527,9 +523,10 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                     choose_surveys_options.append('Bmag_MCPS')
                 if choose_surveys_row['choose_MCPS'] == 0 and 'Vmag_APASS' not in obs_band_names: 
                     choose_surveys_options.append('Vmag_MCPS')
-            if true_phot_band_counter <= 3:
-                choose_surveys_options.extend(['FU', 'FB', 'FV', 'FI', 'Fr', 'Fg'])  # add Gaia synthetic photometry if we have very limited observed photometry
-
+            elif choose_surveys_row['choose_gaia'] == 1:
+                # add Gaia synthetic photometry if we have very limited observed photometry
+                choose_surveys_options.extend(['Umag_GAIA', 'Bmag_GAIA', 'Vmag_GAIA', 'Imag_GAIA', 'gmag_GAIA', 'rmag_GAIA', 'imag_GAIA'])  # 'gmag_GAIA', 'rmag_GAIA'
+            
             # Create dictionaries for observed data
             obs_mags_dict = dict(zip(obs_band_names, obs_mags))
             obs_errors_dict = dict(zip(obs_band_names, obs_mag_errors))
@@ -541,6 +538,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
             min_av = min_max_avs[(min_max_avs['RA'] == RA) & (min_max_avs['DEC'] == dec)]['av_eden'].values[0]
             max_av = min_max_avs[(min_max_avs['RA'] == RA) & (min_max_avs['DEC'] == dec)]['av_sf'].values[0]
             max_av = np.minimum(max_av, 1.0)  # limit to 1
+
             zh_av = min_max_avs[(min_max_avs['RA'] == RA) & (min_max_avs['DEC'] == dec)]['av_zh'].values[0]
             
             # Extract matched data arrays
@@ -558,7 +556,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
             # Pre-extract all model data, only take models with av >= min_av and av <= max_av
             av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= max_av)
             if np.sum(av_mask) == 0:
-                if zh_av is not np.nan and (zh_av >= min_av + 0.05):
+                if not pd.isna(zh_av) and (zh_av >= min_av + 0.05):
                     av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= zh_av)
                 else:
                     av_mask = (models_to_test['av'] >= min_av) & (models_to_test['av'] <= 1.0)
@@ -567,6 +565,9 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
 
             filtered_models = models_to_test[av_mask]
             n_models = len(filtered_models)
+            # if n_models == 0:
+            #     logger.warning(f"Star {star_idx}: no models within av range [{min_av}, {max_av}], skipping")
+            #     continue
             all_model_mags = np.array([filtered_models[band].values for band in common_bands]).T # each row is a model, each column a band
             model_teffs = filtered_models['teff'].values
             model_loggs = filtered_models['logg'].values
@@ -1478,7 +1479,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_pre
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_03122026.csv'
+        summary_filename = f'ysg_temp_fitting_summary_03152026_2.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()

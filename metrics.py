@@ -13,9 +13,11 @@ from pathlib import Path
 _MODULE_DIR = Path(__file__).parent
 
 # offsets_df = pd.read_csv('offsets.csv')
-coords = pd.read_csv(_MODULE_DIR / 'merged_smc_lmc_coords.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
+coords = pd.read_csv(_MODULE_DIR / 'merged_smc_lmc_coords_all.csv', comment='#', sep="\\s+", names=['RA', 'DEC'])
 df_lmc = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/final_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
 df_smc = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/final_smc_ysgcands.csv', comment='#') # , sep="\\s+"
+df_lmc2 = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/prefinal_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
+df_smc2 = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/prefinal_smc_ysgcands.csv', comment='#') # , sep="\\s+"
 
 
 def mean_med_flux(index, df=None, telescopes=None, g=True, correct_offsets=True):
