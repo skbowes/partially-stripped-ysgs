@@ -20,7 +20,7 @@ def load_shared_data():
     """Load all shared data that will be used across workers"""
     print("Loading shared data files...")
     coords = pd.read_csv('merged_smc_lmc_coords_all.csv', comment='#', sep="\\s+", names=['ra', 'dec'])
-    temperature_data = pd.read_csv('synth_phot_temp_estimation/ysg_temp_fitting_summary_03152026_2.csv')
+    temperature_data = pd.read_csv('synth_phot_temp_estimation/ysg_temp_fitting_summary_03152026.csv')
     df_lmc = pd.read_csv('ysg_candidates/final_lmc_ysgcands_allphot_simbad.csv', comment='#')
     df_smc = pd.read_csv('ysg_candidates/final_smc_ysgcands_allphot_simbad.csv', comment='#')
     df_lmc_prefinal = pd.read_csv('ysg_candidates/prefinal_lmc_ysgcands_allphot_simbad.csv', comment='#')
@@ -137,6 +137,7 @@ def process_single_target(target, shared_data):
         
         if len(simbad_match) > 0 and 'main_type' in simbad_match.columns:
             simbad_maintype = simbad_match.iloc[0]['main_type']
+            simbad_othertypes = simbad_match.iloc[0]['other_types']
         
         # Compile results
         result_dict = {
@@ -177,7 +178,8 @@ def process_single_target(target, shared_data):
             'logL': logL,
             'logL_std': logL_std,
             'binary': is_binary,
-            'SIMBAD_maintype': simbad_maintype
+            'SIMBAD_maintype': simbad_maintype,
+            'SIMBAD_othertypes': simbad_othertypes
         }
         
         # Clean up memory
@@ -205,7 +207,9 @@ def process_single_target(target, shared_data):
             'logL': logL,
             'logL_std': logL_std,
             'binary': False,  # Default value
-            'SIMBAD_maintype': np.nan
+            'SIMBAD_maintype': np.nan,
+            'SIMBAD_othertypes': np.nan
+
         }
         return partial_result
 
@@ -233,7 +237,7 @@ def main():
         'amplitude_5', 'lower_percentile_5', 'upper_percentile_5', 'mag_amplitude_5',
         'amplitude_1', 'lower_percentile_1', 'upper_percentile_1', 'mag_amplitude_1',
         'largest_amp', 'largest_amp_mag', 'best_period', 'alarm_level_flag', 'std_amplitude', 
-        'logT', 'logT_std', 'logL', 'logL_std', 'binary', 'SIMBAD_maintype', 'teff', 'teff_std'
+        'logT', 'logT_std', 'logL', 'logL_std', 'binary', 'SIMBAD_maintype', 'SIMBAD_othertypes', 'teff', 'teff_std'
     ]
     
     # Initialize results DataFrame
@@ -266,7 +270,7 @@ def main():
                     results_df.loc[target_idx, key] = value
     
     # Save results
-    output_filename = 'summary_results03152026_2.csv'
+    output_filename = 'summary_results03162026.csv'
     results_df.to_csv(output_filename, index=False)
     print(f"\n✓ Analysis complete! Results saved to {output_filename}")
     print(f"Shape: {results_df.shape}")

@@ -1,4 +1,3 @@
-### to use these functions, must import the following:
 import os
 import pandas as pd
 import matplotlib.pyplot as plt

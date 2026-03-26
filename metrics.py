@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy as sp
+import gc
 from astropy.timeseries import LombScargle
 from matplotlib import gridspec
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.colors import Normalize
 from scipy.signal import find_peaks
 from pathlib import Path
 
@@ -912,8 +915,16 @@ def plot_phase_fold(index, best_period, df=None, telescopes=None, g=True, phase_
         mask = df['telescope'] == telescope
         if mag_space:
             plt.errorbar(phased_time[mask], mags[mask], yerr=mag_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)])
+            # bin and plot median in each phase bin for magnitudes:
         else:
             plt.errorbar(phased_time[mask], flux[mask], yerr=flux_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)])
+    # if mag_space:
+    #     num_bins = int(np.ceil(len(phased_time) / 10))
+    #     bins = np.linspace(0, phase_bins, num_bins + 1)
+    #     bin_indices = np.digitize(phased_time, bins) - 1
+    #     bin_centers = (bins[:-1] + bins[1:]) / 2
+    #     mean_mags = [np.mean(mags[bin_indices == j]) for j in range(num_bins)]
+    #     plt.plot(bin_centers, mean_mags, color='black', linestyle='-', marker='s', markersize=6, label=f'Mean {telescope}', zorder = 12)
     plt.legend(fontsize=12)
     # single colour:
     # plt.errorbar(phased_time, flux, yerr=errors, fmt='o', alpha=0.7, markersize=4)
@@ -925,7 +936,96 @@ def plot_phase_fold(index, best_period, df=None, telescopes=None, g=True, phase_
         plt.ylabel('Flux (mJy)', fontsize=14)
     plt.tick_params(axis='both', which='major', direction ='in', labelsize=14)
     plt.grid(True, alpha=0.3)
-    plt.title(f'{RA} {dec} (2 phases with period = {best_period:.2f} days)', fontsize=14)
+    plt.title(f'{RA} {dec}; {index} (2 phases with period = {best_period:.2f} days)', fontsize=14)
+    plt.tight_layout()
+    # plt.savefig(f'figs/lc_plots/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
+    plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+    # Bin and find amplitude of narrow bin
+    num_bins = int(np.ceil(len(phased_time) / 10))  # e.g., ~10 points per bin
+    bins = np.linspace(0, phase_bins, num_bins + 1)
+    bin_indices = np.digitize(phased_time, bins) - 1
+
+    amplitudes = []
+    for i in range(num_bins):
+        bin_flux = flux[bin_indices == i]
+        if len(bin_flux) > 1:
+            amplitude = np.max(bin_flux) - np.min(bin_flux)
+            amplitudes.append(amplitude)
+    average_amplitude = np.mean(amplitudes)
+    print(f"Average scatter (amplitude) per 10 point phase bin: {average_amplitude:.3f} mJy")
+    return average_amplitude
+
+
+def plot_phase_fold_binned(index, best_period, df=None, telescopes=None, g=True, phase_bins=2, correct_offsets=True, mag_space=False):
+    """
+    Phase fold time series data using a given period.
+    
+    Parameters:
+    -----------
+    time : array-like
+        Time values
+    period : float
+        Period to fold by
+    values : array-like or None
+        Data values to fold
+    errors : array-like or None
+        Uncertainties in data values
+    phase_bins : float
+        Number of phase cycles to show (e.g., 2 shows 0-2 phases)
+        
+    Returns:
+    --------
+    dict : Dictionary containing phased data
+    """
+    if df is None and correct_offsets == False:
+        df, telescopes = df_extract(index, g=g)
+    if df is None and correct_offsets == True:
+        df, telescopes = offset_corrector(index, additive=False, show=False)
+    RA = coords['RA'].iloc[index]
+    dec = coords['DEC'].iloc[index]
+    time = np.array(df['HJD'])  # Time in HJD
+    flux = np.array(df['flux_(mJy)'])  # Flux in mJy
+    mags = np.array(df['mag'])  # Magnitudes
+    flux_errors = np.array(df['flux_err'])  # Flux uncertainties in mJy
+    mag_errors = np.array(df['mag_err'])  # Magnitude uncertainties
+    # period = lombs['best_period']  # Best period from Lomb-Scargle analysis
+    # period = 30.89
+    if best_period > (time.max() - time.min()):
+        return None
+    # Calculate phase
+    colors = ['g', 'b', 'r', 'c', 'm', 'y', 'k']
+    phased_time = (time / best_period) % phase_bins
+
+    plt.figure(figsize=(10, 6))
+    # colour by telescope:
+    for i, telescope in enumerate(telescopes):
+        mask = df['telescope'] == telescope
+        if mag_space:
+            plt.errorbar(phased_time[mask], mags[mask], yerr=mag_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)], alpha = 0.2)
+            # bin and plot median in each phase bin for magnitudes:
+        else:
+            plt.errorbar(phased_time[mask], flux[mask], yerr=flux_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)], alpha = 0.2)
+    if mag_space:
+        num_bins = int(np.ceil(len(phased_time) / 50))
+        bins = np.linspace(0, phase_bins, num_bins + 1)
+        bin_indices = np.digitize(phased_time, bins) - 1
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+        mean_mags = [np.mean(mags[bin_indices == j]) for j in range(num_bins)]
+        plt.plot(bin_centers, mean_mags, color='black', linestyle='-', marker='s', markersize=6, label=f'Mean', zorder = 12)
+    plt.legend(fontsize=12)
+    # single colour:
+    # plt.errorbar(phased_time, flux, yerr=errors, fmt='o', alpha=0.7, markersize=4)
+    plt.xlabel('Phase', fontsize=14)
+    if mag_space:
+        plt.ylabel('Magnitude', fontsize=14)
+        plt.gca().invert_yaxis()  # Invert y-axis for magnitudes
+    else:
+        plt.ylabel('Flux (mJy)', fontsize=14)
+    plt.tick_params(axis='both', which='major', direction ='in', labelsize=14)
+    plt.grid(True, alpha=0.3)
+    plt.title(f'{RA} {dec}; {index} (2 phases with period = {best_period:.2f} days)', fontsize=14)
     plt.tight_layout()
     # plt.savefig(f'figs/lc_plots/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
     plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
@@ -1191,7 +1291,8 @@ def info(index, g=True, change_period=None):
                         best_period = change_period
                 plot_periodogram(index, lombs['frequency'], lombs['power'], lombs['best_frequency'], lombs['false_alarm_level'], lombs['peaks'], lombs['observation_period'], show_best=True)
                 plot_phase_fold(index, best_period, phase_bins=2, mag_space=True)
-                sed_plotter(index)
+                plot_phase_fold_binned(index, best_period, phase_bins=2, mag_space=True)
+                # sed_plotter(index)
                 # computations
                 overall_mean, means, overall_median, medians, overall_mags_mean, overall_mags_median, mags_means, mags_medians = mean_med_flux(index, df=df, telescopes=telescopes)
                 chi_squared_95, chi2_threshold_95, dof_95, chi_flag_95 = chi(index, df=df, telescopes=telescopes, g=g, confidence=0.95)
@@ -1209,6 +1310,182 @@ def info(index, g=True, change_period=None):
         except Exception as e:
                 print(f"An error occurred while processing index {index}: {e}")
                 return
+
+
+def _load_summary_results_var(summary_file='summary_results03162026.csv'):
+    """Load the summary table used for HR diagram highlighting."""
+    summary_path = _MODULE_DIR / summary_file
+    if not summary_path.exists():
+        raise FileNotFoundError(f'Summary file not found: {summary_path}')
+    return pd.read_csv(summary_path)
+
+
+def HR_highlight(index, var_df=None, summary_file='summary_results03162026.csv',
+                 color_col='mag_amplitude_1', vmin=0.0, vmax=0.4, show=True):
+    """Plot an HR diagram with one target highlighted using consistent color normalization."""
+    if var_df is None:
+        var_df = _load_summary_results_var(summary_file=summary_file)
+
+    if index < 0 or index >= len(var_df):
+        raise IndexError(f'Index {index} is out of bounds for summary table with {len(var_df)} rows.')
+
+    required_cols = ['logT', 'logL', 'alarm_level_flag', color_col]
+    missing_cols = [col for col in required_cols if col not in var_df.columns]
+    if missing_cols:
+        raise KeyError(f'Missing required columns in summary table: {missing_cols}')
+
+    variable_mask = (var_df['alarm_level_flag'] == 0)
+    valid_mask = variable_mask & var_df['logT'].notna() & var_df['logL'].notna() & var_df[color_col].notna()
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    norm = Normalize(vmin=vmin, vmax=vmax)
+
+    # Background periodic stars and target use the same color quantity and normalization.
+    sc = ax.scatter(
+        var_df.loc[valid_mask, 'logT'],
+        var_df.loc[valid_mask, 'logL'],
+        c=var_df.loc[valid_mask, color_col],
+        cmap='magma_r',
+        marker='o',
+        s=10,
+        alpha=0.8,
+        norm=norm,
+        label='All periodic targets',
+    )
+
+    target_value = var_df.loc[index, color_col]
+    ax.scatter(
+        var_df.loc[index, 'logT'],
+        var_df.loc[index, 'logL'],
+        c=[target_value],
+        cmap='magma_r',
+        norm=norm,
+        marker='*',
+        s=160,
+        edgecolors='cyan',
+        linewidths=1.2,
+        label=f'Target {index}',
+        zorder=10,
+    )
+
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.set_label('Amplitude (mags)')
+    ax.set_xlim(3.55, 4.0)
+    ax.set_ylim(4.0, 5.5)
+    ax.invert_xaxis()
+    ax.tick_params(axis='both', which='both', direction='in', labelsize=16)
+    ax.set_xlabel('log(T) [K]')
+    ax.set_ylabel('log(L) [Lsun]')
+    ax.set_title(f'HRD with highlighted star {index}')
+    ax.legend()
+
+    if show:
+        plt.show()
+
+    return fig, ax
+
+
+def _capture_info_figures(index, g=True, change_period=None, include_hr_highlight=False,
+                          summary_file='summary_results03162026.csv', var_df=None):
+    """Run info() while capturing figures instead of showing/closing them."""
+    existing_fignums = set(plt.get_fignums())
+    original_show = plt.show
+    original_close = plt.close
+
+    def _suppress_show(*args, **kwargs):
+        return None
+
+    def _suppress_close(*args, **kwargs):
+        return None
+
+    try:
+        plt.show = _suppress_show
+        plt.close = _suppress_close
+        if include_hr_highlight:
+            HR_highlight(index=index, var_df=var_df, summary_file=summary_file, show=False)
+        info(index=index, g=g, change_period=change_period)
+        new_fignums = [num for num in plt.get_fignums() if num not in existing_fignums]
+        return [plt.figure(num) for num in new_fignums]
+    finally:
+        plt.show = original_show
+        plt.close = original_close
+
+
+def info_to_pdf(index, g=True, change_period=None, output_dir=None, pdf_name=None,
+                close_figures=True, include_hr_highlight=True,
+                summary_file='summary_results03162026.csv', var_df=None):
+    """Save all plots generated by info() for one star into a single multi-page PDF."""
+    if output_dir is None:
+        output_dir = _MODULE_DIR / 'figs' / 'star_reports'
+    else:
+        output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if pdf_name is None:
+        ra = coords['RA'].iloc[index]
+        dec = coords['DEC'].iloc[index]
+        pdf_name = f'{index}_{ra}{dec}_info_plots.pdf'
+
+    pdf_path = output_dir / pdf_name
+    figures = _capture_info_figures(
+        index=index,
+        g=g,
+        change_period=change_period,
+        include_hr_highlight=include_hr_highlight,
+        summary_file=summary_file,
+        var_df=var_df,
+    )
+
+    if len(figures) == 0:
+        print(f'No figures were generated by info() for index {index}.')
+        return None
+
+    with PdfPages(pdf_path) as pdf:
+        for fig in figures:
+            pdf.savefig(fig, bbox_inches='tight')
+
+    if close_figures:
+        for fig in figures:
+            plt.close(fig)
+
+    print(f'Saved {len(figures)} plot(s) to {pdf_path}')
+    return pdf_path
+
+
+def info_to_pdf_batch(indices, g=True, change_period=None, output_dir=None,
+                      include_hr_highlight=True, summary_file='summary_results03162026.csv',
+                      cleanup_every=25, force_gc=True):
+    """Save one combined PDF per star index for a list of indices."""
+    saved_paths = []
+    var_df = None
+    if include_hr_highlight:
+        var_df = _load_summary_results_var(summary_file=summary_file)
+
+    for i, idx in enumerate(indices, start=1):
+        try:
+            pdf_path = info_to_pdf(
+                index=idx,
+                g=g,
+                change_period=change_period,
+                output_dir=output_dir,
+                include_hr_highlight=include_hr_highlight,
+                summary_file=summary_file,
+                var_df=var_df,
+            )
+            if pdf_path is not None:
+                saved_paths.append(pdf_path)
+        except Exception as exc:
+            print(f'Failed to save PDF for index {idx}: {exc}')
+
+        if cleanup_every and i % cleanup_every == 0:
+            plt.close('all')
+            if force_gc:
+                gc.collect()
+
+    plt.close('all')
+    if force_gc:
+        gc.collect()
+    return saved_paths
 
 
 def observed_sed(index, flux=True, show=False):
@@ -1564,3 +1841,5 @@ def compute_lomb_scargle_old(index, auto=False, samples_per_peak=5, report = Tru
 #     # plt.tight_layout()
 #     # plt.savefig(f'figs/lc_plots/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
 #     # plt.show()
+
+
