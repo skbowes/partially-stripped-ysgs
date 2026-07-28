@@ -3,6 +3,8 @@ lc_plots/
 lc_plots_2025/
 figs/
 hr_diagrams/
+HR_and_case-by-case/XKCD_Colors.png
+
 
 
 # folders I never check, caches and checkpoints
@@ -61,3 +63,5 @@ synth_phot_temp_estimation/check_temp_fitting_flags.ipynb
 
 # synth_phot_temp_estimation/check_temp_fitting_newstars.ipynb
 spectra_data/ysg_spectra_22b.tar
+.DS_Store
+period04/star_307.p04

@@ -483,7 +483,7 @@ def aliasing(index, df=None, telescopes=None, g=True, auto=False, median=True, s
         plt.close(fig)    
     return frequency, power, peaks
 
-def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, median=True, samples_per_peak=5, report=True, show=False, subtract_median=True, correct_offsets=True):
+def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, median=True, samples_per_peak=10, report=True, show=False, subtract_median=True, correct_offsets=True):
     """
     Compute the Lomb-Scargle periodogram for a given object index.  
     Parameters:
@@ -842,29 +842,32 @@ def plot_periodogram(index, frequency, power, best_freq, false_alarm_level, titl
     if show_best:
         best_idx = np.where(frequency == best_freq)[0][0]  # Find index in frequency array
         plt.axvline(x=frequency[best_idx], color='red', linestyle='--', alpha=0.7, 
-                   label=f'Best Period = {1/frequency[best_idx]:.2f} days')
+                   label=f'$\\nu_{{max}}$ = {frequency[best_idx]:.6f} 1/day\nP$_{{max}}$ = {1/frequency[best_idx]:.2f} days')
         plt.plot(frequency[best_idx], power[best_idx], 'ro', markersize=8)
         # for peak in peaks:
         #     if peak != frequency[best_idx]:  # Exclude the tallest peak
         #         plt.axvline(x=peak, color='green', linestyle='--', alpha=0.5,
         #                    label=f'Peak at {1/peak:.2f} days')
     
-    if auto is not True:
-        plt.xlim(0, 0.9)
-        # plt.xlim(0, 0.4)
+    # if auto is not True:
+    # #     plt.xlim(0, 0.9)
+    #     plt.xlim(0, 0.2)
     
     if show_best:
         plt.legend(fontsize=14)
+    plt.xscale('log')
+    plt.yscale('log')
     plt.axhline(y=false_alarm_level, color='grey', linestyle='--',
                 label=f'False Alarm Level ({100*0.01:.1f}%): {false_alarm_level:.3e}')
     plt.xlabel('Frequency (1/day)', fontsize=16)
     plt.ylabel('Power', fontsize=16)
     plt.tick_params(axis='both', which='major', direction ='in', labelsize=16)
     plt.grid(True, alpha=0.3)
+
     # plt.title(f'{RA} {dec} periodogram', fontsize=14)
     # plt.tight_layout()
     # plt.savefig(f'figs/lc_plots/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
-    plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
+    # plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_periodogramg.png', dpi=300, bbox_inches='tight')
     plt.show()
     plt.close(fig)
 
