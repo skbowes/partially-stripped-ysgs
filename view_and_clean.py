@@ -51,7 +51,7 @@ def find_header_line(file_path):
 
 
 
-def modified_zscore(df, values, sigma=4.0, seeoutliers=False, report=False, v2 = False):
+def modified_zscore(df, values, sigma=3.0, seeoutliers=False, report=False, v2 = False):
     #Returns the modified Z-score of all points in the array. This is defined as:
     #Zm = 0.6745 * (xi - median(xi))/MAD
     #where the MAD is the median avarage deviation defined as:
@@ -223,6 +223,41 @@ def df_extract(index, g = True, seeoutliers=False, report=False):
             if RA >= 10:
                 file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'sub2026', f'J{RA}{dec}_V.dat')
 
+
+
+    # if index < 848:
+    # # new, works for directory ap_phot_avg, where new (2026 sept) lcs are stored
+    # RA_hms = deg_to_hms_filenames(RA)
+    # dec_dms = deg_to_dms_filenames(dec)
+    # RA_hms1 = RA_hms[0]
+    # dec_dms1 = dec_dms[0]
+    # if g == True:
+    #     file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms1}{dec_dms1}_ASAS-SN_g.dat')
+    #     if not os.path.isfile(file_path):
+    #         RA_hms2 = RA_hms[1]
+    #         file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms2}{dec_dms1}_ASAS-SN_g.dat')
+    #         if not os.path.isfile(file_path):
+    #             dec_dms2 = dec_dms[1]
+    #             file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms1}{dec_dms2}_ASAS-SN_g.dat')
+    #             if not os.path.isfile(file_path):
+    #                 file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms2}{dec_dms2}_ASAS-SN_g.dat')
+    #                 if not os.path.isfile(file_path):
+    #                     print(f"File not found for target {index}")
+    #                     print(RA, dec)
+    # if g == False:
+    #     file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms1}{dec_dms1}_ASAS-SN_V.dat')
+    #     if not os.path.isfile(file_path):
+    #         RA_hms2 = RA_hms[1]
+    #         file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms2}{dec_dms1}_ASAS-SN_V.dat')
+    #         if not os.path.isfile(file_path):
+    #             dec_dms2 = dec_dms[1]
+    #             file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms1}{dec_dms2}_ASAS-SN_V.dat')
+    #             if not os.path.isfile(file_path):
+    #                 file_path = os.path.join(str(_MODULE_DIR), 'asassn_lc_data', 'ap_phot_avg', f'{RA_hms2}{dec_dms2}_ASAS-SN_V.dat')
+    #                 if not os.path.isfile(file_path):
+    #                     print(f"File not found for target {index}")
+    #                     print(RA, dec)
+
     # Read the data
     header_line = find_header_line(file_path)
     if header_line is None:
@@ -232,6 +267,7 @@ def df_extract(index, g = True, seeoutliers=False, report=False):
     with open(file_path) as f:
         for j, line in enumerate(f):
             if j == header_line:
+                # column_names = line.strip("# \n").replace("flux (mJy)", "flux_(mJy)").split()
                 column_names = line.strip("# \n").replace("flux (mJy)", "flux_(mJy)").split()
                 break
     # Read the data, skipping all lines before the header
@@ -1084,7 +1120,7 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
     df = df.reset_index(drop=True)
     
     # REMOVE OUTLIERS (only on remaining valid data)
-    df = modified_zscore(df, df['flux_(mJy)'], sigma = 3,report=False)[0]
+    df = modified_zscore(df, df['flux_(mJy)'],report=False)[0]
     # DROP outliers
     df = df.dropna(axis=0, how='any')
     df = df.reset_index(drop=True)

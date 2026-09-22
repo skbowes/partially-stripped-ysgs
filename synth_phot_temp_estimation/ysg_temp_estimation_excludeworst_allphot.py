@@ -34,7 +34,20 @@ def setup_logging():
     return logging.getLogger('ysg_fitting')
 
 def load_data():
-    """Load all required data files"""
+    """Load all required data files
+    
+    Parameters:
+        None
+
+    Returns:
+        coords: DataFrame with RA and Dec of stars
+        df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal: DataFrames with photometry data for SMC and LMC stars
+        smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries: DataFrames with binary information (Anna's binary files)
+        gaia_bprp: DataFrame with Gaia synthetic photometry
+        choose_surveys: DataFrame with flags for what surveys to use in fitting
+        computed_models: DataFrame of synthetic photometry BOSZ models
+
+    """
     logger = logging.getLogger('ysg_fitting')
     logger.info("Loading data files...")
     # Load coordinates, SMC and LMC candidate data
@@ -61,6 +74,27 @@ def observed_sed_allphot(index, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_
     """ 
     Plots the SED for a given index in the coords dataframe
     Modified for multiprocessing - takes dataframes as parameters
+
+    Parameters:
+        index: Index of the star in the coords dataframe
+        coords: DataFrame with RA and Dec of stars
+        df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal: DataFrames with photometry data for SMC and LMC stars
+        smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries: DataFrames with binary information (Anna's binary files)
+        gaia_bprp: DataFrame with Gaia synthetic photometry
+        choose_surveys: DataFrame with flags for what surveys to use in fitting
+        flux: If True, return fluxes; if False, return magnitudes
+        show: If True, display the plot
+
+    Returns:
+        wavelengths: Array of effective wavelengths for the observed bands
+        fluxes: Array of fluxes (or magnitudes) for the observed bands
+        flux_errors: Array of flux errors (or magnitude errors) for the observed bands
+        mags: Array of magnitudes for the observed bands
+        mag_errors: Array of magnitude errors for the observed bands
+        band_names: List of band names corresponding to the observations
+        true_phot_band_counter: Count of true photometric bands used in the fit
+        binary: Boolean indicating if the star is a binary
+
     """
     RA = coords['ra'].iloc[index]
     dec = coords['dec'].iloc[index]
@@ -435,7 +469,7 @@ def determine_use_flags_from_swift(obs_band_names, obs_mags, summary, computed_m
                     }
         else:
             # B is closer or equal, now check B vs V
-            if residuals_B <= residuals_V or binary==True:
+            if residuals_B <= residuals_V:# or binary==True:
                 return {'use_U': False, 'use_B': True, 'use_V': False,
                         'final_teff_median': summary['teff_median_B_redder'],
                         'final_logg_median': summary['logg_median_B_redder'],
@@ -471,11 +505,26 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
     Process a chunk of stars using vectorized calculations.
     This function runs in a separate process.
     Returns both detailed results and summary statistics.
+
+    Parameters: 
+    - star_indices_chunk: list of star indices to process
+    - choose_surveys: DataFrame with survey selection information
+    - computed_models: DataFrame with pre-computed synthetic photometry
+    - coords: DataFrame with star coordinates
+    - df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal: DataFrames with SMC and LMC data
+    - smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries: DataFrames with binary information
+    - gaia_bprp: DataFrame with Gaia BP/RP data
+    - iterations: number of sampled observed SEDs to generate for each star (default: 1000)
+
+    Returns:
+    - chunk_results: list of dictionaries with detailed results for each star
+    - chunk_summaries: list of dictionaries with summary statistics for each star
     """
     
     logger = logging.getLogger(f'worker_{star_indices_chunk[0]}')
     logger.info(f"Worker started: processing stars {star_indices_chunk[0]}-{star_indices_chunk[-1]}")
     # min_max_avs = pd.read_csv('ysg_candidate_extinctions.csv')
+    # read in the min and max av values
     min_max_avs = pd.read_csv('ysg_extinctions_all.csv')
 
     standard_band_order = ['Kmag_2MASS', 'Hmag_2MASS', 'Jmag_2MASS', 'Umag_MCPS', 'Bmag_APASS', 'Bmag_MCPS', 'gmag_APASS', 'Vmag_MCPS', 'Vmag_APASS', 'rmag_APASS', 'imag_APASS', 'uvm2mag_SWIFT', 'uvw1mag_SWIFT', 'uvw2mag_SWIFT']
@@ -494,9 +543,10 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
         
         RA = coords['ra'].iloc[star_idx]
         dec = coords['dec'].iloc[star_idx]
-        output_filename = f'temp_fitting/{RA}_{dec}.csv'
+        output_filename = f'temp_fitting_08132026/{RA}_{dec}.csv'
 
         try:
+
             obs = observed_sed_allphot(star_idx, coords, df_smc, df_lmc, df_smc_prefinal, df_lmc_prefinal, smc_vis_binaries, smc_opt_binaries, lmc_vis_binaries, lmc_opt_binaries, gaia_bprp, choose_surveys, show=False)
             obs_wavelengths, obs_fluxes, obs_flux_errors, obs_mags, obs_mag_errors, obs_band_names, true_phot_band_counter, binary = obs
 
@@ -583,7 +633,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
             ref_idx = common_bands.index('Kmag_2MASS')
             k_idx = common_bands.index('Kmag_2MASS')
 
-            # Generate sampled spectra
+            # Generate sampled spectra, the number of iterations is set to 1000 by default, but can be adjusted
             sampled_mags = np.zeros((len(matched_obs_mags), iterations))
             for i in range(len(matched_obs_mags)):
                 sampled_mags[i,:] = np.random.normal(matched_obs_mags[i], matched_obs_errors[i], iterations)
@@ -595,13 +645,14 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
             best_fits_U_redder = []  # Store best fit for each iteration/K combination
             best_fits_B_redder = []
             best_fits_V_redder = []
-            
+
+            # do this for each iteration, and for each K variation, and store the best fit for each combination
             for it in range(iterations):
                 sampled_obs_mags = sampled_mags[:,it].copy()
                 best_fits_U_redder_K = []  # Store best fits for this iteration across K variations
                 best_fits_B_redder_K = []
                 best_fits_V_redder_K = []
-                
+                # Loop over K variations
                 for K in varying_K_sigmas:
                     modified_obs_mags = sampled_obs_mags.copy()
                     modified_obs_mags[k_idx] = modified_obs_mags[k_idx] + K * matched_obs_errors[k_idx]
@@ -634,21 +685,11 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                         diff_squared_V_redder = diff_squared[:, V_redder_indices]
                         errors_V_redder = matched_obs_errors[V_redder_indices]
                         chi2_V_redder_all = np.sum(diff_squared_V_redder / (errors_V_redder[np.newaxis, :]**2), axis=1) # sum over all models
-                        # Identify worst matching band for each model
-                        # residuals = modified_obs_mags[V_redder_indices][np.newaxis, :] - model_mags_shifted[:, V_redder_indices]
-                        # # Create array of indices of worst fitting points
-                        # worst_match_idx = np.argmax(np.abs(residuals), axis=1)
-                        # # Could exclude worst match here if desired:
-                        # chi2_V_redder_all_excludeworst = chi2_V_redder_all - (residuals[np.arange(n_models), worst_match_idx]**2) / (errors_V_redder[worst_match_idx]**2)
-                        # exclude_mask = chi2_V_redder_all_excludeworst < (1/10) * chi2_V_redder_all
-                        # # Apply exclusion only where beneficial
-                        # chi2_V_redder_all = np.where(exclude_mask, chi2_V_redder_all_excludeworst, chi2_V_redder_all)
-                        # # report how many models used exclusion
-                        # # if np.any(exclude_mask):
-                        # #     print(f"Excluded worst band from chi2 for {np.sum(exclude_mask)} out of {n_models} models")
+                        
 
                     
                     # Find best fits for this iteration/K combination (EFFICIENT)
+                    # Best U_redder fit
                     best_U_redder_idx = np.argmin(chi2_U_redder_all)
                     best_U_redder_result_K = {
                         'iteration': it, 'K_variation': K, 'teff': model_teffs[best_U_redder_idx],
@@ -660,56 +701,6 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                         'model_filename': model_filenames[best_U_redder_idx],
                         'excluded_band': np.nan
                     }
-                    
-                    # # COMMENTED OUT: Worst-band exclusion moved to after best K selection
-                    # # Check if excluding worst non-U band improves U_redder fit by factor of 100
-                    # if len(U_redder_indices) > 3:  # Need at least 3 bands to exclude one (keeping U + 2 others)
-                    #     residuals_best_model = modified_obs_mags[U_redder_indices] - model_mags_shifted[best_U_redder_idx, U_redder_indices]
-                    #     # Find U band position in U_redder_indices
-                    #     U_band_pos = None
-                    #     for pos, idx in enumerate(U_redder_indices):
-                    #         if common_bands[idx] == 'Umag_MCPS':
-                    #             U_band_pos = pos
-                    #             break
-                    #     
-                    #     if U_band_pos is not None:
-                    #         # Get indices of non-U bands
-                    #         non_U_positions = [pos for pos in range(len(U_redder_indices)) if pos != U_band_pos]
-                    #         if len(non_U_positions) > 1:  # Need at least 2 non-U bands to exclude one
-                    #             residuals_non_U = np.abs(residuals_best_model[non_U_positions])
-                    #             worst_band_pos_in_non_U = np.argmax(residuals_non_U)
-                    #             worst_band_pos = non_U_positions[worst_band_pos_in_non_U]
-                    #             worst_band_idx = U_redder_indices[worst_band_pos]
-                    #             
-                    #             # Calculate improvement if we exclude this band
-                    #             chi2_original = chi2_U_redder_all[best_U_redder_idx]
-                    #             chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
-                    #             
-                    #             if chi2_exclude_worst < chi2_original / 10:  # Factor of 100 improvement
-                    #                 # Redo fitting excluding the worst band
-                    #                 U_redder_indices_excluded = np.delete(U_redder_indices, worst_band_pos)
-                    #                 
-                    #                 # Recalculate chi2 for all models excluding worst band
-                    #                 diff_squared_U_redder_excl = diff_squared[:, U_redder_indices_excluded]
-                    #                 errors_U_redder_excl = matched_obs_errors[U_redder_indices_excluded]
-                    #                 chi2_U_redder_all_excl = np.sum(diff_squared_U_redder_excl / (errors_U_redder_excl[np.newaxis, :]**2), axis=1)
-                    #                 
-                    #                 # Find new best fit
-                    #                 best_U_redder_idx_excl = np.nanargmin(chi2_U_redder_all_excl)
-                    #                 
-                    #                 # Update best result if this is better
-                    #                 if chi2_U_redder_all_excl[best_U_redder_idx_excl] < chi2_original:
-                    #                     best_U_redder_result_K = {
-                    #                         'iteration': it, 'K_variation': K, 'teff': model_teffs[best_U_redder_idx_excl],
-                    #                         'logg': model_loggs[best_U_redder_idx_excl], 'av': model_avs[best_U_redder_idx_excl],
-                    #                         'logL': np.log10(model_lum_unscaled[best_U_redder_idx_excl] * offsets[best_U_redder_idx_excl] / 3.826e33),
-                    #                         'chi2_U_redder': chi2_U_redder_all_excl[best_U_redder_idx_excl],
-                    #                         'chi2_B_redder': chi2_B_redder_all[best_U_redder_idx_excl],
-                    #                         'chi2_V_redder': chi2_V_redder_all[best_U_redder_idx_excl],
-                    #                         'model_filename': model_filenames[best_U_redder_idx_excl],
-                    #                         'excluded_band': common_bands[worst_band_idx]
-                    #                     }
-                    
                     best_fits_U_redder_K.append(best_U_redder_result_K)
                     
                     # Best B_redder fit
@@ -724,10 +715,9 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                         'model_filename': model_filenames[best_B_redder_idx],
                         'excluded_band': np.nan
                     }
-                    
-                    
                     best_fits_B_redder_K.append(best_B_redder_result_K)
 
+                    # Best V_redder fit
                     best_V_redder_idx = np.nanargmin(chi2_V_redder_all)
                     best_V_redder_result_K = {
                         'iteration': it, 'K_variation': K, 'teff': model_teffs[best_V_redder_idx],
@@ -739,8 +729,6 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                         'model_filename': model_filenames[best_V_redder_idx],
                         'excluded_band': np.nan
                     }
-                    
-                    
                     best_fits_V_redder_K.append(best_V_redder_result_K)
                 
 
@@ -761,7 +749,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                 # NOW CHECK WORST BAND EXCLUSION FOR BEST K RESULTS
                 # For each redder type, recalculate with the best K value and check if excluding worst band helps
                 
-                # U_redder worst band exclusion
+                ################# U_redder worst band exclusion
                 best_K_U = best_U_redder_result['K_variation']
                 modified_obs_mags_U = sampled_obs_mags.copy()
                 modified_obs_mags_U[k_idx] = modified_obs_mags_U[k_idx] + best_K_U * matched_obs_errors[k_idx]
@@ -799,7 +787,8 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                             
                             chi2_original = chi2_U_redder_all_U[best_U_model_idx]
                             chi2_exclude_worst = chi2_original - (residuals_best_model[worst_band_pos]**2) / (matched_obs_errors[worst_band_idx]**2)
-                            
+
+                            ###### THRESHOLD IS HARD-CODED BELOW #####################
                             if chi2_exclude_worst < chi2_original / 5: # change factor here
                                 U_redder_indices_excluded = np.delete(U_redder_indices, worst_band_pos)
                                 diff_squared_U_redder_excl = diff_squared_U[:, U_redder_indices_excluded]
@@ -835,7 +824,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                                         'excluded_band': common_bands[worst_band_idx]
                                     }
                 
-                # B_redder worst band exclusion
+                ################# B_redder worst band exclusion
                 best_K_B = best_B_redder_result['K_variation']
                 modified_obs_mags_B = sampled_obs_mags.copy()
                 modified_obs_mags_B[k_idx] = modified_obs_mags_B[k_idx] + best_K_B * matched_obs_errors[k_idx]
@@ -906,7 +895,7 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                                         'excluded_band': common_bands[worst_band_idx]
                                     }
                 
-                # V_redder worst band exclusion
+                ################# V_redder worst band exclusion
                 best_K_V = best_V_redder_result['K_variation']
                 modified_obs_mags_V = sampled_obs_mags.copy()
                 modified_obs_mags_V[k_idx] = modified_obs_mags_V[k_idx] + best_K_V * matched_obs_errors[k_idx]
@@ -983,12 +972,9 @@ def process_star_chunk_vectorized(star_indices_chunk, choose_surveys, computed_m
                 best_fits_V_redder.append(best_V_redder_result)
 
 
-                
-
-
             # END VECTORIZED CALCULATIONS
             # Create separate _U_redder and _B_redder and _V_redder parquet files with ALL best-fit results
-            os.makedirs('temp_fitting', exist_ok=True)
+            os.makedirs('temp_fitting_08132026', exist_ok=True)
             
             # Write full band results (best fit for each iteration/K combination)
             U_redder_data = []
@@ -1479,7 +1465,7 @@ def compute_ysgs_parallel(total_star_indices, coords, df_smc, df_lmc, df_smc_pre
     # Write summary statistics file
     if all_summaries:
         logger.info("Writing summary statistics file...")
-        summary_filename = f'ysg_temp_fitting_summary_03152026_2.csv'
+        summary_filename = f'ysg_temp_fitting_summary_08132026.csv'
         with open(summary_filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=all_summaries[0].keys())
             writer.writeheader()

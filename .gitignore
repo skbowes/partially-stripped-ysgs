@@ -14,7 +14,7 @@ __pycache__/
 synth_phot_temp_estimation/synth_phot_sed_fit_ex/
 
 # folder containing extra old copies of python and jupyter files
-extras/
+archived_code/
 offsets_examples/
 old_summary_results/
 archived_temp_results/
@@ -26,13 +26,16 @@ sub2/
 sub2025/
 sub2025_V2/
 sub2026/
+asassn_lc_data/ap_phot_avg/
 asassn_lc_data/lc2026.tar
+asassn_lc_data/LMC_YSG_NewPhotCal2026_ap_phot_avg.tar
 synth_phot_temp_estimation/pysynphot_data/grid/bosz/r2000/m-0.75/
 synth_phot_temp_estimation/pysynphot_data/grid/bosz/r2000/m-0.25/
 synth_phot_temp_estimation/pysynphot_data/grid/pickles/
 synth_phot_temp_estimation/pysynphot_data/pickles_catalog.csv
 synth_phot_temp_estimation/pysynphot_data/grid/bosz/r500/
 synth_phot_temp_estimation/temp_fitting/
+/synth_phot_temp_estimation/dustmaps_data/
 crossmatch_contamination/
 dustmaps_data/
 synth_phot_temp_estimation/hrd/

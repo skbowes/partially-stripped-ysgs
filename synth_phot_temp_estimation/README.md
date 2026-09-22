@@ -1,36 +1,42 @@
-# synth_phot_temp_estimation directory
-this directory contains all the work for estimating temperatures for the stars.
+Running YSG Temperature modelling
 
-### Notebooks:
- in temp_estimation_prep.ipynb: before estimating temperatures, most pre-work for that calculation is done here.
+Download BOSZ Models:
+To download the BOSZ models, go to pysynphot_data/grid/bosz. From there, run the script files: 
+./bosz_ysg_m-0.25_filtered.sh
+./bosz_ysg_m-0.75_filtered.sh
+This will grab the right models in the parameter range we have been targeting and put them in two directories, labelled by metallicity (m-0.25 and m-0.75). This should be all you need to do here!
 
-check_surveys_verification.ipynb: making sure our offset test for when to include APASS or MCPS or both is working.
+Extra info on downloading BOSZ models:
+There are two other script files, hlsp_bosz…_v1_bulkdl.sh. These are important to keep in the same directory since they contain all the possible model names, but definitely don’t run unless you want to download every model possible!
+The pysynphot_data/grid/bosz directory also contains important files, such as the filter transmissions, the wavelengths that the model spectra are calculated at (stored separately in file bosz2024_wave_r2000.txt to save filespace).
+The synthetic photometry was pre-computed and stored in the main directory in synth_phot_all_models.csv. 
+If for some reason you wanted to re-compute the synthetic photometry (don’t think you’ll need to but just in case) you can use temp_estimation.ipynb (cmd+f to search for the synth_phot_all_models() function, then python ysg_temp_estimation.py --stars 848 --cores 8 to actually do the SED fitting comparison to the BOSZ models.
 
-temp_lum_results_excludeworst_allphot.ipynb: the main notebook for visualizing results from the calculations done in ysg_temp_estimation_excludeworst_allphot.py.
+Downloading YSG lightcurves:
+Not necessary for you to see the spectra, but if you want to do this in order to see the lightcurves of the stars, you can download the tar file that *********** sent via email and put the contents in a subdirectory off the main directory you should call /sub2025.
 
-check_temp_fitting*.ipynb: these look at the results of ysg_temp_estimation_excludeworst_allphot.py in more nitty gritty detail, with different lists of potential problems from the fitting that were determined by eye. these lists/divisions were done in a google spreadsheet.
-
-### Scripts:
-ysg_temp_estimation_excludeworst_allphot.py. the main file. can be run with python ysg_temp_estimation_excludeworst_allphot.py --stars 1270 --cores 8
-compute_extinctions_parallel.py: run to query the extinctions for edenhofer and sf maps for all stars. writes to file ysg_extinctions_all.csv. 
-zh_scraper.py: file from anna that queries the extinctions from zh. not used here.
-
-### Files:
-synth_phot_all_models_*.csv: these contain different versions of pre-computing the synthetic photometry. the latest version which should be used is synth_phot_all_models_allphot_gordon.csv. if it doesn't say gordon, it is an older file that was calculated with a ccm89 extinction law.
-
-ysg_extinctions_all.csv: this contains the extinctions for all targets according to both edenhofer and sf maps. these are used to limit the Av on BOSZ models tested against the observed SED in ysg_temp_estimation_excludeworst_allphot.py. was generated using compute_extinctions_parallel.py.
-
-no_optical_*_coords.csv: the coordinates of stars that have no optical (neither APASS or MCPS) data.
-
-choose_surveys_v3.csv: this contains the choice of MCPS or APASS for all stars based on plot_lin_interp function in temp_estimation_prep.ipynb. this is used by ysg_temp_estimation_excludeworst_allphot.py to flag on and off which photometry to include for each star.
-
-ysg_temp_fitting_summary_v10_prefinal.csv: the summarized final results that contain THE final estimates of temperatures. the key csv file.
+Downloading the temp fitting results for each star:
+If you want to just play with the SED fitting or with overall statistics, you won’t need to do this. If you want to be able to see the histograms for a specific star, you’ll need to take the zipped file contained in this google drive folder (temp_fitting.zip) and open it in the main directory. It will create a subdirectory called /temp_fitting that contains parquet files for the results of fitting to cut bands and full bands for each star. It’s a sizable directory (1600 files). Only necessary for looking at the histogram distributions of parameters for a specific star.
 
 
-### Directories:
-temp_fitting/: contains the individual files for each fitting technique, for each star. The iterations are saved here so we can look more deeply at how the temperature was estimated for any given star.
+Playing around!
 
+Use the notebook temp_lum_results_excludeworst_allphot.ipynb for playing around. It contains the functions for making all the plots I’ve been showing you the past few weeks.
 
+Probably the most important thing to note is that if you are using a plotting function that is showing the properties of one star (rather than all on the HR diagram for example), then I call the star by the index number in coords (the variable defined in all my files/for all my functions for the file merged_smc_lmc_coords.csv). It simply contains the coordinates for all the YSGs, both SMC and LMC. The first set of coordinates is index 0, the second index 1, and goes all the way to star 848. So for most of my functions, you just pass the index of the star you want to look at (say, fit_models_to_star_flux(4)) and it’ll show the SED and model spectra for the fourth star on that list.
 
+If you want to pick out a specific star from a certain summary diagram (say, the new HR diagram, or the 1-1 fitting comparison plot) and figure out what index it is to check it out, I think it is easiest to put ysg_temp_fitting_summary_v2 (new results from SED fitting) into TOPCAT, make the plot in there and select the star. Then in the table view you should see the table column for ‘star_idx’.
 
+Other important files that are called on in this file:
+summary_results15.csv: This is the file that contains the results of our variability analysis so far! It contains Anna's old T and L estimations and my estimations of the dominant period.
 
+synth_phot_all_models.csv: The pre-computed synthetic photometry.
+Created using temp_estimation_prep.ipynb
+
+ysg_temp_fitting_summary_v2: This is the results of fitting for the temperatures (comparing observed to synthetic photometry). Stores the best fit (means, medians) information from the comparison.
+Created using python ysg_temp_estimation.py --stars 848 --cores 8 (or however many cores you want to use)
+
+Other details:
+If you DO care about seeing the histograms for parameters for a certain star and you downloaded the /temp_fitting directory noted above, you can comment in a call to the histo() function to see this.
+
+Most of the past work I did (mainly on the lightcurves) is stored as functions in metrics.py. This is already imported at the top of the notebook, and you can simply run the info() function to see most of the plots for any given star (lightcurve before and after correction, periodogram, SED in Jy, etc). The functions that perform the actual cleaning of data are contained in view_and_clean.py.

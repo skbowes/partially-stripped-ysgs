@@ -20,7 +20,7 @@ def load_shared_data():
     """Load all shared data that will be used across workers"""
     print("Loading shared data files...")
     coords = pd.read_csv('merged_smc_lmc_coords_all.csv', comment='#', sep="\\s+", names=['ra', 'dec'])
-    temperature_data = pd.read_csv('synth_phot_temp_estimation/ysg_temp_fitting_summary_03152026.csv')
+    temperature_data = pd.read_csv('synth_phot_temp_estimation/ysg_temp_fitting_summary_08132026.csv')
     df_lmc = pd.read_csv('ysg_candidates/final_lmc_ysgcands_allphot_simbad.csv', comment='#')
     df_smc = pd.read_csv('ysg_candidates/final_smc_ysgcands_allphot_simbad.csv', comment='#')
     df_lmc_prefinal = pd.read_csv('ysg_candidates/prefinal_lmc_ysgcands_allphot_simbad.csv', comment='#')
@@ -270,7 +270,7 @@ def main():
                     results_df.loc[target_idx, key] = value
     
     # Save results
-    output_filename = 'summary_results03162026.csv'
+    output_filename = 'summary_results08182026.csv'
     results_df.to_csv(output_filename, index=False)
     print(f"\n✓ Analysis complete! Results saved to {output_filename}")
     print(f"Shape: {results_df.shape}")

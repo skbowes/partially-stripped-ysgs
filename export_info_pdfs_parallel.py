@@ -100,7 +100,7 @@ def _initialize_fit_context():
         "choose_surveys": pd.read_csv(synth_dir / "choose_surveys_v4.csv", comment="#"),
         "computed_models": pd.read_csv(synth_dir / "synth_phot_all_models_allphot_gordon_gaia.csv"),
         "gaia_bprp": pd.read_csv(synth_dir / "gaia_bprp_synthphot_allbands.csv", sep=";", comment="#"),
-        "temp_stats": pd.read_csv(synth_dir / "ysg_temp_fitting_summary_03152026.csv"),
+        "temp_stats": pd.read_csv(synth_dir / "ysg_temp_fitting_summary_08132026.csv"),
     }
 
     lmc_gordon = ascii.read(
@@ -930,7 +930,7 @@ def fit_models_to_star_flux(star_idx):
 
 
 def _build_pdf_for_index(index, g=True, change_period=None, output_dir=None,
-                         include_hr_highlight=True, summary_file="summary_results03162026.csv",
+                         include_hr_highlight=True, summary_file="summary_results08182026.csv",
                          include_sed_figure=True):
     from metrics import _capture_info_figures, coords
 
@@ -993,7 +993,7 @@ def _worker(args):
 
 
 def run_parallel(indices, g=True, change_period=None, output_dir=None,
-                 include_hr_highlight=True, summary_file="summary_results03162026.csv",
+                 include_hr_highlight=True, summary_file="summary_results08182026.csv",
                  max_workers=None, include_sed_figure=True):
     indices = list(indices)
     if len(indices) == 0:
@@ -1043,7 +1043,7 @@ def parse_args():
     parser.add_argument("--g", action="store_true", default=True, help="Use g-band (default: True)")
     parser.add_argument("--change-period", type=float, default=None, help="Override period in days")
     parser.add_argument("--output-dir", type=str, default="figs/star_reports", help="Output directory for per-star PDFs")
-    parser.add_argument("--summary-file", type=str, default="summary_results03162026.csv", help="Summary CSV used for HR_highlight")
+    parser.add_argument("--summary-file", type=str, default="summary_results08182026.csv", help="Summary CSV used for HR_highlight")
     parser.add_argument("--no-sed-figure", action="store_true", help="Disable adding fit_models_to_star_flux page to each PDF")
     parser.add_argument("--no-hr-highlight", action="store_true", help="Disable HR_highlight page in the output PDFs")
     return parser.parse_args()
