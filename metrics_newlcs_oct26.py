@@ -1,5 +1,5 @@
-from view_and_clean import df_extract, df_extract_v2
-from view_and_clean import telescope_separator,offset_corrector_window, offset_corrector
+from view_and_clean_newlcs_oct26 import df_extract#, df_extract_v2
+from view_and_clean_newlcs_oct26 import telescope_separator,offset_corrector_window, offset_corrector
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -22,6 +22,21 @@ df_smc = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/fina
 df_lmc2 = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/prefinal_lmc_ysgcands.csv', comment='#') # , sep="\\s+"
 df_smc2 = pd.read_csv(_MODULE_DIR / 'ysg_candidates/original_files_from_anna/prefinal_smc_ysgcands.csv', comment='#') # , sep="\\s+"
 
+
+telescope_colors = {
+    'H': "#ff13ac",
+    'k': "#ff9f0e",
+    'o': "#0f6e0f",
+    'l': '#d62728',
+    'm': '#9467bd',
+    'n': "#833829",
+    'i': '#e377c2',
+    'F': "#fff23d",
+    'E': "#6dbd22",
+    'G': '#17becf',
+    'j': "#0c85ff",
+    'p': "#040502",
+}
 
 def mean_med_flux(index, df=None, telescopes=None, g=True, correct_offsets=True):
     """
@@ -111,8 +126,8 @@ def fit_plotter_flux(index, df=None, telescopes=None, tail=1, g=True, correct_of
     mean = mean_med[0]
     median = mean_med[2]
 
-    mean_fit = mean * np.ones_like(df['HJD'])  # Create a constant fit line based on the mean flux
-    median_fit = median * np.ones_like(df['HJD'])  # Create a constant fit line based on the median flux
+    mean_fit = mean * np.ones_like(df['bjd'])  # Create a constant fit line based on the mean flux
+    median_fit = median * np.ones_like(df['bjd'])  # Create a constant fit line based on the median flux
     colors = ['g', 'b', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple', 'brown']
     # colors = ['b', 'b', 'b', 'b', 'b', 'b', 'b']
 
@@ -123,15 +138,15 @@ def fit_plotter_flux(index, df=None, telescopes=None, tail=1, g=True, correct_of
     for t in telescopes:
         # DEPENDENT ON LENGTH OF SMC/LMC INDICES
         if index <= 376:
-            mask = (df['telescope'] == t) & (df['HJD'] > 2459325.00) & (df['HJD'] < 2459650.00)
+            mask = (df['telescope'] == t) & (df['bjd'] > 2459325.00) & (df['bjd'] < 2459650.00)
             len_window = len(df[mask])
-            mask_t_n1 = (df['telescope'] == t_n1) & (df['HJD'] > 2459325.00) & (df['HJD'] < 2459650.00)
+            mask_t_n1 = (df['telescope'] == t_n1) & (df['bjd'] > 2459325.00) & (df['bjd'] < 2459650.00)
             if len(df[mask]) >= len(df[mask_t_n1]):
                 most_data_telescope = t
         if index > 376:
-            mask = (df['telescope'] == t) & (df['HJD'] > 2459400.00) & (df['HJD'] < 2459725.00)
+            mask = (df['telescope'] == t) & (df['bjd'] > 2459400.00) & (df['bjd'] < 2459725.00)
             len_window = len(df[mask])
-            mask_t_n1 = (df['telescope'] == t_n1) & (df['HJD'] > 2459400.00) & (df['HJD'] < 2459725.00)
+            mask_t_n1 = (df['telescope'] == t_n1) & (df['bjd'] > 2459400.00) & (df['bjd'] < 2459725.00)
             if len(df[mask]) >= len(df[mask_t_n1]):
                 most_data_telescope = t
         print(f"telescope {t}", len_window, len_window / len(df[df['telescope'] == t]))
@@ -142,13 +157,14 @@ def fit_plotter_flux(index, df=None, telescopes=None, tail=1, g=True, correct_of
     fig, ax1 = plt.subplots(figsize=(18, 6))
     for j, tel in enumerate(telescopes):
         mask = df['telescope'] == tel
-        ax1.errorbar(df[mask]['HJD'], df[mask]['flux_(mJy)'], yerr=df[mask]['flux_err'],
-                     color=colors[j % len(colors)], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {tel}')
-    # ax1.plot(df['HJD'], mean_fit, color='black', label='Mean Flux', zorder=10)
-    # ax1.plot(df['HJD'], median_fit, color='grey', label='Median Flux', zorder=10)
+        color = telescope_colors.get(tel, '#000000')
+        ax1.errorbar(df[mask]['bjd'], df[mask]['flux_(mJy)'], yerr=df[mask]['flux_err'],
+                     color=color, capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {tel}')
+    # ax1.plot(df['bjd'], mean_fit, color='black', label='Mean Flux', zorder=10)
+    # ax1.plot(df['bjd'], median_fit, color='grey', label='Median Flux', zorder=10)
     # ax1.axhline(lower_percentile, color='red', linestyle='--', label=f'{tail}% percentile')
     # ax1.axhline(upper_percentile, color='red', linestyle='--')
-    ax1.set_xlabel('HJD', fontsize=14)
+    ax1.set_xlabel('bjd', fontsize=14)
     ax1.set_ylabel('Flux (mJy)', fontsize=14)
     ax1.legend(loc='upper left', fontsize=14)
     ax1.grid(True)
@@ -185,8 +201,9 @@ def fit_plotter_flux_v2(index, df=None, telescopes=None, tail=1, filematcher_res
     fig, ax1 = plt.subplots(figsize=(12, 6))
     for j, tel in enumerate(telescopes):
         mask = df['telescope'] == tel
+        color = telescope_colors.get(tel, '#000000')
         ax1.errorbar(df[mask]['jd'], df[mask]['flux'], yerr=df[mask]['flux_err'],
-                     color=colors[j % len(colors)], capsize=5, markeredgecolor='black', fmt='o')# , label=f'Telescope {tel}')
+                     color=color, capsize=5, markeredgecolor='black', fmt='o')# , label=f'Telescope {tel}')
     ax1.plot(df['jd'], mean_fit, color='black', label='Mean Flux', zorder=10)
     ax1.plot(df['jd'], median_fit, color='grey', label='Median Flux', zorder=10)
     ax1.axhline(lower_percentile, color='red', linestyle='--', label=f'{tail}% percentile')
@@ -223,7 +240,7 @@ def curve_fitter_flux(index, df=None, telescopes=None, g=True, mean=False, corre
         df, telescopes = df_extract(index, g=g)
     if df is None and correct_offsets == True:
         df, telescopes = offset_corrector(index, additive=False, show=False)
-    x = np.array(df['HJD'])
+    x = np.array(df['bjd'])
     y = np.array(df['flux_(mJy)'])
     mean, means, median, medians = mean_med_flux(index, df=df, telescopes=telescopes, g=g)
     if mean:
@@ -255,7 +272,7 @@ def largest_amplitude(index, df=None, telescopes=None, g=True, correct_offsets=T
     min_mag = df['mag'].min()
     amplitude_mag = max_mag - min_mag 
     
-    print(f"\tLargest amplitude of variability (g-band: {g}): {amplitude:.2f} mJy, {amplitude_mag:.2f} mags")
+    print(f"\tLargest amplitude of variability (g-band: {g}): {amplitude:.3f} mJy, {amplitude_mag:.3f} mags")
     return amplitude, amplitude_mag
 
 
@@ -327,7 +344,7 @@ def chi(index, df=None, telescopes=None, confidence=0.95, g=True, correct_offset
         df, telescopes = df_extract(index, g=g)
     if df is None and correct_offsets == True:
         df, telescopes = offset_corrector(index, additive=False, show=False)
-    x = np.array(df['HJD'])
+    x = np.array(df['bjd'])
     y = np.array(df['flux_(mJy)'])
     mean = mean_med_flux(index, df=df, telescopes=telescopes, g=g)[0]
     mean_fit = mean * np.ones_like(x)  # Create a constant fit line based on the mean magnitude
@@ -367,9 +384,9 @@ def percentile_amplitude(index, df=None, telescopes=None, tails=5, g=True, corre
     upper_mag_percentile = np.percentile(mags, 100-tails)
     mag_amplitude = upper_mag_percentile - lower_mag_percentile
     print("Amplitude metrics:")
-    print(f"\tLower {tails}% percentile: {lower_percentile:.2f} mJy, {lower_mag_percentile:.2f} mags")
-    print(f"\tUpper {tails}% percentile: {upper_percentile:.2f} mJy, {upper_mag_percentile:.2f} mags")
-    print(f"\tPercentile amplitude of variability (excluding the brightest and dimmest {tails}% of data) (g-band: {g}): {amplitude:.2f} mJy, {mag_amplitude:.2f} mags")
+    print(f"\tLower {tails}% percentile: {lower_percentile:.3f} mJy, {lower_mag_percentile:.3f} mags")
+    print(f"\tUpper {tails}% percentile: {upper_percentile:.3f} mJy, {upper_mag_percentile:.3f} mags")
+    print(f"\tPercentile amplitude of variability (excluding the brightest and dimmest {tails}% of data) (g-band: {g}): {amplitude:.3f} mJy, {mag_amplitude:.3f} mags")
     return amplitude, lower_percentile, upper_percentile, mag_amplitude
 
 def percentile_amplitude_v2(index, df=None, telescopes=None, filematcher_result=None, tails=5, g=True, correct_offsets=True):
@@ -404,11 +421,11 @@ def plot_percentile_amplitude(index, df=None, telescopes=None, tails=5, g=True, 
     upper_percentile = np.percentile(fluxes, 100-tails)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(df['HJD'], fluxes, 'o', label='Flux values')
+    plt.plot(df['bjd'], fluxes, 'o', label='Flux values')
     plt.axhline(lower_percentile, color='red', linestyle='--', label=f'Lower {tails}% percentile')
     plt.axhline(upper_percentile, color='green', linestyle='--', label=f'Upper {tails}% percentile')
     # plt.title(f'Flux Values and Percentiles for Object {index} (g-band: {g})')
-    plt.xlabel('HJD')
+    plt.xlabel('bjd')
     plt.ylabel('Flux (mJy)')
     plt.legend()
     plt.show()
@@ -436,7 +453,7 @@ def aliasing(index, df=None, telescopes=None, g=True, auto=False, median=True, s
         df, telescopes = df_extract(index, g=g)
     if df is None and correct_offsets == True:
         df, telescopes = offset_corrector(index, additive=False, show=False)
-    time = np.array(df['HJD']) 
+    time = np.array(df['bjd']) 
     if median:
         values = np.full_like(df['flux_(mJy)'], df['flux_(mJy)'].mean())
     else:  
@@ -483,7 +500,7 @@ def aliasing(index, df=None, telescopes=None, g=True, auto=False, median=True, s
         plt.close(fig)    
     return frequency, power, peaks
 
-def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, median=True, samples_per_peak=10, report=True, show=False, subtract_median=True, correct_offsets=True):
+def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, median=True, samples_per_peak=10, report=True, show=False, subtract_median=False, correct_offsets=True):
     """
     Compute the Lomb-Scargle periodogram for a given object index.  
     Parameters:
@@ -508,9 +525,10 @@ def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, me
         df, telescopes = df_extract(index, g=g)
     if df is None and correct_offsets == True:
         df, telescopes = offset_corrector(index, additive=False, show=False)
-    time = np.array(df['HJD'])
+    time = np.array(df['bjd'])
     values = np.array(df['flux_(mJy)']) 
     errors = np.array(df['flux_err'])  
+    # don't subtract median usually - fit_mean is true by default, check astropy LS documentation
     if subtract_median:
         values -= np.median(values)
     
@@ -625,7 +643,7 @@ def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, me
                         label=f'Best Period after alias removal = {1/best_freq:.2f} days')
         plt.axhline(y=alarm_level, color='grey', linestyle='--', label = 'FA level of original periodogram')
         # plt.axhline(y=alias_alarm_level, color='orange', linestyle='--', label = 'FA level of aliases')
-        plt.xlim(0,0.06)
+        # plt.xlim(0,0.06)
         plt.xlabel('Frequency (1/day)')
         plt.ylabel('Power')
         plt.legend()
@@ -649,7 +667,7 @@ def compute_lomb_scargle(index, df=None, telescopes=None, g=True, auto=False, me
     }
 
 
-def compute_lomb_scargle_alias(index, df=None, telescopes=None, g=True, auto=False, median=True, samples_per_peak=5, report=True, show=False, subtract_median=True, correct_offsets=True):
+def compute_lomb_scargle_alias(index, df=None, telescopes=None, g=True, auto=False, median=True, samples_per_peak=5, report=True, show=False, subtract_median=False, correct_offsets=True):
     """
     Compute the Lomb-Scargle periodogram for a given object index.  
     Parameters:
@@ -674,7 +692,7 @@ def compute_lomb_scargle_alias(index, df=None, telescopes=None, g=True, auto=Fal
         df, telescopes = df_extract(index, g=g)
     if df is None and correct_offsets == True:
         df, telescopes = offset_corrector(index, additive=False, show=False)
-    time = np.array(df['HJD'])
+    time = np.array(df['bjd'])
     values = np.array(df['flux_(mJy)']) 
     errors = np.array(df['flux_err'])  
     if subtract_median:
@@ -899,7 +917,7 @@ def plot_phase_fold(index, best_period, df=None, telescopes=None, g=True, phase_
         df, telescopes = offset_corrector(index, additive=False, show=False)
     RA = coords['RA'].iloc[index]
     dec = coords['DEC'].iloc[index]
-    time = np.array(df['HJD'])  # Time in HJD
+    time = np.array(df['bjd'])  # Time in bjd
     flux = np.array(df['flux_(mJy)'])  # Flux in mJy
     mags = np.array(df['mag'])  # Magnitudes
     flux_errors = np.array(df['flux_err'])  # Flux uncertainties in mJy
@@ -916,11 +934,12 @@ def plot_phase_fold(index, best_period, df=None, telescopes=None, g=True, phase_
     # colour by telescope:
     for i, telescope in enumerate(telescopes):
         mask = df['telescope'] == telescope
+        color = telescope_colors.get(telescope, '#000000')
         if mag_space:
-            plt.errorbar(phased_time[mask], mags[mask], yerr=mag_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)])
+            plt.errorbar(phased_time[mask], mags[mask], yerr=mag_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=color)
             # bin and plot median in each phase bin for magnitudes:
         else:
-            plt.errorbar(phased_time[mask], flux[mask], yerr=flux_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)])
+            plt.errorbar(phased_time[mask], flux[mask], yerr=flux_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=color)
     # if mag_space:
     #     num_bins = int(np.ceil(len(phased_time) / 10))
     #     bins = np.linspace(0, phase_bins, num_bins + 1)
@@ -988,7 +1007,7 @@ def plot_phase_fold_binned(index, best_period, df=None, telescopes=None, g=True,
         df, telescopes = offset_corrector(index, additive=False, show=False)
     RA = coords['RA'].iloc[index]
     dec = coords['DEC'].iloc[index]
-    time = np.array(df['HJD'])  # Time in HJD
+    time = np.array(df['bjd'])  # Time in bjd
     flux = np.array(df['flux_(mJy)'])  # Flux in mJy
     mags = np.array(df['mag'])  # Magnitudes
     flux_errors = np.array(df['flux_err'])  # Flux uncertainties in mJy
@@ -1004,12 +1023,13 @@ def plot_phase_fold_binned(index, best_period, df=None, telescopes=None, g=True,
     plt.figure(figsize=(10, 6))
     # colour by telescope:
     for i, telescope in enumerate(telescopes):
+        color = telescope_colors.get(telescope, '#000000')
         mask = df['telescope'] == telescope
         if mag_space:
-            plt.errorbar(phased_time[mask], mags[mask], yerr=mag_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)], alpha = 0.2)
+            plt.errorbar(phased_time[mask], mags[mask], yerr=mag_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=color, alpha = 0.2)
             # bin and plot median in each phase bin for magnitudes:
         else:
-            plt.errorbar(phased_time[mask], flux[mask], yerr=flux_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=colors[i % len(colors)], alpha = 0.2)
+            plt.errorbar(phased_time[mask], flux[mask], yerr=flux_errors[mask], capsize=5, markeredgecolor='black', fmt='o', label=f'Telescope {telescope}', color=color, alpha = 0.2)
     if mag_space:
         num_bins = int(np.ceil(len(phased_time) / 50))
         bins = np.linspace(0, phase_bins, num_bins + 1)
@@ -1057,10 +1077,10 @@ def amplitude_per_period(index, best_period, df=None, telescopes=None, report=Tr
         df, telescopes = offset_corrector(index, additive=False, show=False)
     # lombs = compute_lomb_scargle(index, df=df, telescopes=telescopes, auto=False, samples_per_peak=10, report = False)  # freq_range=(0.0, 0.05),
     period = best_period
-    if period > (df['HJD'].max() - df['HJD'].min()):
+    if period > (df['bjd'].max() - df['bjd'].min()):
         return None
     # print(f"Best period found: {period:.2f} days")
-    time = np.array(df['HJD'])
+    time = np.array(df['bjd'])
     flux = np.array(df['flux_(mJy)'])
     
     # Create period bins
@@ -1131,11 +1151,11 @@ def amplitude_per_period_plot(index, result, df=None, telescopes=None, g=True, c
         df, telescopes = df_extract(index, g=g)
     if df is None and correct_offsets == True:
         df, telescopes = offset_corrector(index, additive=False, show=False)
-    # days_since_start = df['HJD'] - df['HJD'].min()
+    # days_since_start = df['bjd'] - df['bjd'].min()
     plt.figure(figsize=(20, 6))
-    plt.xlabel('Time (HJD)', fontdict={'fontsize': 18})
+    plt.xlabel('Time (bjd)', fontdict={'fontsize': 18})
     plt.ylabel('Flux (mJy)', fontdict={'fontsize': 18})
-    plt.plot(df['HJD'], df['flux_(mJy)'], '-')
+    plt.plot(df['bjd'], df['flux_(mJy)'], '-')
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
     # ticks going inward
@@ -1149,7 +1169,7 @@ def amplitude_per_period_plot(index, result, df=None, telescopes=None, g=True, c
     # Amplitude vs. Time plot
     ax0 = plt.subplot(gs[0])
     ax0.plot(bin_centers, amplitudes, 'o', markersize=6)
-    ax0.set_xlabel('Time (HJD)', fontdict={'fontsize': 14})
+    ax0.set_xlabel('Time (bjd)', fontdict={'fontsize': 14})
     ax0.set_ylabel('Amplitude (mJy)', fontdict={'fontsize': 14})
     ax0.grid(True, alpha=0.3)
     # ax0.set_ylim(4.2, 8.2) 
@@ -1285,7 +1305,9 @@ def sed_plotter(index):
 def info(index, g=True, change_period=None):
         # plots
         # individual_plotter(index, seeoutliers=True)
+        # df, telescopes = df_extract(index, g=g, show=True)
         df, telescopes = offset_corrector(index, g=g, mag_space=True, show_window=False)
+
         try:
                 lombs = compute_lomb_scargle(index, df=df, telescopes=telescopes, g=g, auto=False, samples_per_peak=10)
                 if change_period is None:
@@ -1374,7 +1396,7 @@ def HR_highlight(index, var_df=None, summary_file='summary_results03162026.csv',
     cbar = fig.colorbar(sc, ax=ax)
     cbar.set_label('Amplitude (mags)')
     ax.set_xlim(3.55, 4.0)
-    ax.set_ylim(4.0, 5.5)
+    ax.set_ylim(4.0, 5.7)
     ax.invert_xaxis()
     ax.tick_params(axis='both', which='both', direction='in', labelsize=16)
     ax.set_xlabel('log(T) [K]')
@@ -1389,7 +1411,7 @@ def HR_highlight(index, var_df=None, summary_file='summary_results03162026.csv',
 
 
 def _capture_info_figures(index, g=True, change_period=None, include_hr_highlight=False,
-                          summary_file='summary_results03162026.csv', var_df=None):
+                          summary_file='summary_results10202026.csv', var_df=None):
     """Run info() while capturing figures instead of showing/closing them."""
     existing_fignums = set(plt.get_fignums())
     original_show = plt.show
@@ -1404,9 +1426,9 @@ def _capture_info_figures(index, g=True, change_period=None, include_hr_highligh
     try:
         plt.show = _suppress_show
         plt.close = _suppress_close
-        if include_hr_highlight:
-            HR_highlight(index=index, var_df=var_df, summary_file=summary_file, show=False)
         info(index=index, g=g, change_period=change_period)
+        if include_hr_highlight:
+                    HR_highlight(index=index, var_df=var_df, summary_file=summary_file, show=False)
         new_fignums = [num for num in plt.get_fignums() if num not in existing_fignums]
         return [plt.figure(num) for num in new_fignums]
     finally:
@@ -1416,10 +1438,10 @@ def _capture_info_figures(index, g=True, change_period=None, include_hr_highligh
 
 def info_to_pdf(index, g=True, change_period=None, output_dir=None, pdf_name=None,
                 close_figures=True, include_hr_highlight=True,
-                summary_file='summary_results03162026.csv', var_df=None):
+                summary_file='summary_results10202026.csv', var_df=None):
     """Save all plots generated by info() for one star into a single multi-page PDF."""
     if output_dir is None:
-        output_dir = _MODULE_DIR / 'figs' / 'star_reports'
+        output_dir = _MODULE_DIR / 'figs' / 'star_reports_oct26'
     else:
         output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1456,7 +1478,7 @@ def info_to_pdf(index, g=True, change_period=None, output_dir=None, pdf_name=Non
 
 
 def info_to_pdf_batch(indices, g=True, change_period=None, output_dir=None,
-                      include_hr_highlight=True, summary_file='summary_results03162026.csv',
+                      pdf_name=None, close_figures=True, include_hr_highlight=True, summary_file='summary_results10202026.csv',
                       cleanup_every=25, force_gc=True):
     """Save one combined PDF per star index for a list of indices."""
     saved_paths = []
@@ -1644,7 +1666,7 @@ def observed_sed(index, flux=True, show=False):
 # def reduced_chi(index, g=True):
 #     # uses the mean
 #     df, telescopes = df_extract(index, g=g)
-#     x = np.array(df['HJD'])
+#     x = np.array(df['bjd'])
 #     y = np.array(df['flux_(mJy)'])
 #     mean, means, median, medians = mean_med_flux(index, g=g)
 #     mean_fit = mean * np.ones_like(x)  # Create a constant fit line based on the mean magnitude
@@ -1727,7 +1749,7 @@ def compute_lomb_scargle_old(index, auto=False, samples_per_peak=5, report = Tru
     df, telescopes = df_extract(index, g=True)
     # if correct_offsets == True:
     #     df = offset_corrector(index, additive=False, show=False)
-    time = np.array(df['HJD'])  # Time in HJD
+    time = np.array(df['bjd'])  # Time in bjd
     values = np.array(df['flux_(mJy)'])  # Flux in mJy
     errors = np.array(df['flux_err'])  # Flux uncertainties in mJy
     if subtract_median:

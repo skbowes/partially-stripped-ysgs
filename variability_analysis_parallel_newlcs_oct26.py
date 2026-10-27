@@ -11,8 +11,8 @@ from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
-from view_and_clean import offset_corrector
-from metrics import (mean_med_flux, largest_amplitude, chi, percentile_amplitude, 
+from view_and_clean_newlcs_oct26 import offset_corrector, df_extract
+from metrics_newlcs_oct26 import (mean_med_flux, largest_amplitude, chi, percentile_amplitude, 
                      compute_lomb_scargle, amplitude_per_period, offset_warning)
 
 
@@ -99,11 +99,14 @@ def process_single_target(target, shared_data):
     logL_std = temp_row['final_logL_std']
     
     try:
+        #pre-offset correction factors
         # Load and process light curve data
         df, telescopes = offset_corrector(target, additive=False, show=False)
-        
+        df_length = len(df)
         # Run all analyses
         overall_mean, means, overall_median, medians, overall_mags_mean, overall_mags_median, mags_means, mags_medians = mean_med_flux(target, df=df, telescopes=telescopes)
+        # new sept 29 2026
+        overall_mean_uncorrected, means_uncorrected, overall_median_uncorrected, medians_uncorrected, overall_mags_mean_uncorrected, overall_mags_median_uncorrected, mags_means_uncorrected, mags_medians_uncorrected = mean_med_flux(target, correct_offsets = False, telescopes=telescopes)
         chi_squared_95, chi2_threshold_95, dof_95, chi_flag_95 = chi(target, df=df, telescopes=telescopes, confidence=0.95)
         chi_squared_997, chi2_threshold_997, dof_997, chi_flag_997 = chi(target, df=df, telescopes=telescopes, confidence=0.997)
         chi_squared_68, chi2_threshold_68, dof_68, chi_flag_68 = chi(target, df=df, telescopes=telescopes, confidence=0.68)
@@ -144,11 +147,16 @@ def process_single_target(target, shared_data):
             'star_idx': target,
             'RA': ra,
             'DEC': dec,
+            'df_length': df_length,
             'overall_mean': overall_mean,
             'overall_median': overall_median,
             'overall_mean_mag': overall_mags_mean,
             'overall_median_mag': overall_mags_median,
             'offset_flag': offset_flag,
+            'overall_mean_uncorrected': overall_mean_uncorrected,
+            'overall_median_uncorrected': overall_median_uncorrected,
+            'overall_mean_mag_uncorrected': overall_mags_mean_uncorrected,
+            'overall_median_mag_uncorrected': overall_mags_median_uncorrected,
             'chi_squared_68': chi_squared_68,
             'chi2_threshold_68': chi2_threshold_68,
             'chi_flag_68': chi_flag_68,
@@ -183,9 +191,13 @@ def process_single_target(target, shared_data):
         }
         
         # Clean up memory
-        del df, telescopes, lombs, result
+        del df, telescopes, lombs, result, df_length
         del overall_mean, means, overall_median, medians
         del overall_mags_mean, overall_mags_median, mags_means, mags_medians
+        del overall_mean_uncorrected, means_uncorrected, overall_median_uncorrected, medians_uncorrected
+        del overall_mags_mean_uncorrected, overall_mags_median_uncorrected, mags_means_uncorrected, mags_medians_uncorrected
+        del chi_squared_68, chi2_threshold_68, dof_68, chi_flag_68
+        del chi_squared_95, chi2_threshold_95, dof_95, chi_flag_95
         del amplitude_5, amplitude_1, largest_amp, std_amp
         
         return result_dict
@@ -230,8 +242,12 @@ def main():
     
     # Create column structure
     columns = ['star_idx',
-        'RA', 'DEC', 'overall_mean', 'overall_median', 'overall_mean_mag', 'overall_median_mag',
-        'offset_flag', 'chi_squared_68', 'chi2_threshold_68', 'chi_flag_68',
+        'RA', 'DEC', 
+        'df_length',
+        'overall_mean', 'overall_median', 'overall_mean_mag', 'overall_median_mag',
+        'offset_flag', 
+        'overall_mean_uncorrected', 'overall_median_uncorrected', 'overall_mean_mag_uncorrected', 'overall_median_mag_uncorrected',
+        'chi_squared_68', 'chi2_threshold_68', 'chi_flag_68',
         'chi_squared_95', 'chi2_threshold_95', 'chi_flag_95', 
         'chi_squared_997', 'chi2_threshold_997', 'chi_flag_997',
         'amplitude_5', 'lower_percentile_5', 'upper_percentile_5', 'mag_amplitude_5',
@@ -270,12 +286,15 @@ def main():
                     results_df.loc[target_idx, key] = value
     
     # Save results
-    output_filename = 'summary_results08182026.csv'
+    output_filename = 'summary_results10202026.csv'
     results_df.to_csv(output_filename, index=False)
     print(f"\n✓ Analysis complete! Results saved to {output_filename}")
     print(f"Shape: {results_df.shape}")
     print(f"Successful: {results_df['overall_mean'].notna().sum()} / {n_targets} targets")
     print(f"Failed: {results_df['overall_mean'].isna().sum()} targets")
+    print("List of failed targets (star_idx):")
+    for idx in results_df[results_df['overall_mean'].isna()].index:
+        print(f"  - {idx}")
     
     # Memory stats
     memory_mb = results_df.memory_usage(deep=True).sum() / 1024**2

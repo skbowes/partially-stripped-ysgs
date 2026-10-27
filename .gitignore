@@ -4,6 +4,8 @@ lc_plots_2025/
 figs/
 hr_diagrams/
 HR_and_case-by-case/XKCD_Colors.png
+jared_meeting/
+pyriod_results/
 
 
 
@@ -18,15 +20,19 @@ archived_code/
 offsets_examples/
 old_summary_results/
 archived_temp_results/
+lmc2/
+
 
 
 # folders containing data that is important but too big to store
 mag_amp_divisions/
-sub2/
+sub2_2022/
 sub2025/
 sub2025_V2/
 sub2026/
-asassn_lc_data/ap_phot_avg/
+sub_oct2026/
+sub_feb2026
+asassn_lc_data/sub_sept2026_ap_phot_avg/
 asassn_lc_data/lc2026.tar
 asassn_lc_data/LMC_YSG_NewPhotCal2026_ap_phot_avg.tar
 synth_phot_temp_estimation/pysynphot_data/grid/bosz/r2000/m-0.75/
