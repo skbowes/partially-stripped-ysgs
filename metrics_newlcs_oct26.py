@@ -1,5 +1,5 @@
 from view_and_clean_newlcs_oct26 import df_extract#, df_extract_v2
-from view_and_clean_newlcs_oct26 import telescope_separator,offset_corrector_window, offset_corrector
+from view_and_clean_newlcs_oct26 import telescope_separator, offset_corrector_window, offset_corrector
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -177,48 +177,48 @@ def fit_plotter_flux(index, df=None, telescopes=None, tail=1, g=True, correct_of
     plt.show()
     plt.close(fig)
 
-def fit_plotter_flux_v2(index, df=None, telescopes=None, tail=1, filematcher_result=None, g=True, correct_offsets=True):
-    """
-    Same as fit_plotter_flux but for v2 data structure.
-    """
-    if df is None and correct_offsets == False:
-        df, telescopes = df_extract(index, g=g)
-    if df is None and correct_offsets == True:
-        df, telescopes = offset_corrector(index, additive=False, show=False)
-    mean_med = mean_med_flux_v2(index, df=df, telescopes=telescopes, g=g, filematcher_result=filematcher_result)
-    mean = mean_med[0]
-    median = mean_med[2]
-    mean_fit = mean * np.ones_like(df['jd'])  # Create a constant fit line based on the mean flux
-    median_fit = median * np.ones_like(df['jd'])  # Create a constant fit line based on the median flux
-    colors = ['g', 'b', 'r', 'c', 'm', 'y', 'k']
-    # colors = ['b', 'b', 'b', 'b', 'b', 'b', 'b']
+# def fit_plotter_flux_v2(index, df=None, telescopes=None, tail=1, filematcher_result=None, g=True, correct_offsets=True):
+#     """
+#     Same as fit_plotter_flux but for v2 data structure.
+#     """
+#     if df is None and correct_offsets == False:
+#         df, telescopes = df_extract(index, g=g)
+#     if df is None and correct_offsets == True:
+#         df, telescopes = offset_corrector(index, additive=False, show=False)
+#     mean_med = mean_med_flux_v2(index, df=df, telescopes=telescopes, g=g, filematcher_result=filematcher_result)
+#     mean = mean_med[0]
+#     median = mean_med[2]
+#     mean_fit = mean * np.ones_like(df['jd'])  # Create a constant fit line based on the mean flux
+#     median_fit = median * np.ones_like(df['jd'])  # Create a constant fit line based on the median flux
+#     colors = ['g', 'b', 'r', 'c', 'm', 'y', 'k']
+#     # colors = ['b', 'b', 'b', 'b', 'b', 'b', 'b']
 
-    fluxes = df['flux'].values
-    lower_percentile = np.percentile(fluxes, 0+tail)
-    upper_percentile = np.percentile(fluxes, 100-tail)
-    plt.rcParams['font.family'] = 'serif'
+#     fluxes = df['flux'].values
+#     lower_percentile = np.percentile(fluxes, 0+tail)
+#     upper_percentile = np.percentile(fluxes, 100-tail)
+#     plt.rcParams['font.family'] = 'serif'
 
-    fig, ax1 = plt.subplots(figsize=(12, 6))
-    for j, tel in enumerate(telescopes):
-        mask = df['telescope'] == tel
-        color = telescope_colors.get(tel, '#000000')
-        ax1.errorbar(df[mask]['jd'], df[mask]['flux'], yerr=df[mask]['flux_err'],
-                     color=color, capsize=5, markeredgecolor='black', fmt='o')# , label=f'Telescope {tel}')
-    ax1.plot(df['jd'], mean_fit, color='black', label='Mean Flux', zorder=10)
-    ax1.plot(df['jd'], median_fit, color='grey', label='Median Flux', zorder=10)
-    ax1.axhline(lower_percentile, color='red', linestyle='--', label=f'{tail}% percentile')
-    ax1.axhline(upper_percentile, color='red', linestyle='--')
-    ax1.set_xlabel('jd', fontsize=14)
-    ax1.set_ylabel('Flux (mJy)', fontsize=14)
-    ax1.legend(loc='upper left')
-    ax1.grid(True)
+#     fig, ax1 = plt.subplots(figsize=(12, 6))
+#     for j, tel in enumerate(telescopes):
+#         mask = df['telescope'] == tel
+#         color = telescope_colors.get(tel, '#000000')
+#         ax1.errorbar(df[mask]['jd'], df[mask]['flux'], yerr=df[mask]['flux_err'],
+#                      color=color, capsize=5, markeredgecolor='black', fmt='o')# , label=f'Telescope {tel}')
+#     ax1.plot(df['jd'], mean_fit, color='black', label='Mean Flux', zorder=10)
+#     ax1.plot(df['jd'], median_fit, color='grey', label='Median Flux', zorder=10)
+#     ax1.axhline(lower_percentile, color='red', linestyle='--', label=f'{tail}% percentile')
+#     ax1.axhline(upper_percentile, color='red', linestyle='--')
+#     ax1.set_xlabel('jd', fontsize=14)
+#     ax1.set_ylabel('Flux (mJy)', fontsize=14)
+#     ax1.legend(loc='upper left')
+#     ax1.grid(True)
 
-    RA = coords['RA'][index]
-    dec = coords['DEC'][index]
-    print(f'RA: {RA}, DEC: {dec}')
-    plt.title(f'{RA} {dec} (g-band)', fontsize=14)
-    plt.show()
-    plt.close(fig)
+#     RA = coords['RA'][index]
+#     dec = coords['DEC'][index]
+#     print(f'RA: {RA}, DEC: {dec}')
+#     plt.title(f'{RA} {dec} (g-band)', fontsize=14)
+#     plt.show()
+#     plt.close(fig)
 
 def curve_fitter_flux(index, df=None, telescopes=None, g=True, mean=False, correct_offsets=True):
     """
@@ -299,28 +299,28 @@ def offset_warning(index, g=True):
     return offset_flag
     # return offsets
 
-def offset_warning_v2(index, filematcher_result=None, g=True):
-    """Deals with UNCORRECTED dataframe - offsets have not been corrected
-    Finds the mean flux for each telescope and compares them to find offsets. Hard-coded threshold of 1.0 mJy for significant offset.
-    """
-    df, telescopes = df_extract_v2(index, filematcher_result=filematcher_result, g=g, v2=True)
-    means = mean_med_flux_v2(index, filematcher_result=filematcher_result, g=g)[1]
-    print(means)
-    offset_flag = 0
-    offsets = {}
-    for i, current_mean in enumerate(means):
-        for j, comparison_mean in enumerate(means):
-            if i != j:  # Avoid comparing the same telescope
-                offset = current_mean - comparison_mean
-                offsets[f"{telescopes[i]}_vs_{telescopes[j]}"] = offset
-    print(f"Offsets for object {index} (g-band: {g}):")
-    print(offsets)
-    for scope, offset in offsets.items():
-        ### Set threshold for significant offset
-        if abs(offset) > 1.0:
-            print(f"Warning: {scope} has a significant offset of {offset:.4f} mJy")
-            offset_flag = 1
-    return offset_flag
+# def offset_warning_v2(index, filematcher_result=None, g=True):
+#     """Deals with UNCORRECTED dataframe - offsets have not been corrected
+#     Finds the mean flux for each telescope and compares them to find offsets. Hard-coded threshold of 1.0 mJy for significant offset.
+#     """
+#     df, telescopes = df_extract_v2(index, filematcher_result=filematcher_result, g=g, v2=True)
+#     means = mean_med_flux_v2(index, filematcher_result=filematcher_result, g=g)[1]
+#     print(means)
+#     offset_flag = 0
+#     offsets = {}
+#     for i, current_mean in enumerate(means):
+#         for j, comparison_mean in enumerate(means):
+#             if i != j:  # Avoid comparing the same telescope
+#                 offset = current_mean - comparison_mean
+#                 offsets[f"{telescopes[i]}_vs_{telescopes[j]}"] = offset
+#     print(f"Offsets for object {index} (g-band: {g}):")
+#     print(offsets)
+#     for scope, offset in offsets.items():
+#         ### Set threshold for significant offset
+#         if abs(offset) > 1.0:
+#             print(f"Warning: {scope} has a significant offset of {offset:.4f} mJy")
+#             offset_flag = 1
+#     return offset_flag
 
 
 def chi(index, df=None, telescopes=None, confidence=0.95, g=True, correct_offsets=True, show=False):
