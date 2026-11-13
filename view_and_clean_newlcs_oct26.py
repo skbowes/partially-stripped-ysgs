@@ -1004,7 +1004,7 @@ def offset_corrector(index, g=True, additive=False, mag_space=False, show=True, 
         plt.title(f'{ra} {dec}; {index} Corrected lightcurve')
         plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{ra}{dec}_lcg.png', bbox_inches='tight', dpi=300)
         plt.show()
-        plt.close(fig)
+        # plt.close(fig)
 
     return df, telescopes
 

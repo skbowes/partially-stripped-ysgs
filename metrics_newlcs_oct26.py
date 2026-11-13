@@ -1051,7 +1051,7 @@ def plot_phase_fold_binned(index, best_period, df=None, telescopes=None, g=True,
     plt.title(f'{RA} {dec}; {index} (2 phases with period = {best_period:.2f} days)', fontsize=14)
     plt.tight_layout()
     # plt.savefig(f'figs/lc_plots/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
-    plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
+    # plt.savefig(_MODULE_DIR / f'figs/lc_plots_2025/{RA}{dec}_phaseg.png', dpi=300, bbox_inches='tight')
     plt.show()
 
     # Bin and find amplitude of narrow bin
